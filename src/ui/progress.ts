@@ -1,6 +1,5 @@
+import cliProgress from 'cli-progress';
 import chalk from 'chalk';
-
-const BAR_WIDTH = 30;
 
 /**
  * Decodes URL encoding for human-readable display.
@@ -11,35 +10,6 @@ function decodeForDisplay(str: string): string {
   } catch {
     return str;
   }
-}
-
-const FILLED_CHAR = '\u2588'; // █
-const EMPTY_CHAR = '\u2591';  // ░
-
-/**
- * Renders a progress bar string.
- */
-export function renderProgressBar(
-  current: number,
-  total: number | null,
-  width: number = BAR_WIDTH
-): string {
-  if (total === null || total === 0) {
-    // Indeterminate progress - show animated pattern
-    const pos = current % width;
-    const bar = EMPTY_CHAR.repeat(pos) + FILLED_CHAR.repeat(3) + EMPTY_CHAR.repeat(Math.max(0, width - pos - 3));
-    return chalk.cyan(`[${bar.slice(0, width)}]`);
-  }
-
-  const percentage = Math.min(current / total, 1);
-  const filled = Math.round(percentage * width);
-  const empty = width - filled;
-
-  const filledStr = chalk.green(FILLED_CHAR.repeat(filled));
-  const emptyStr = chalk.gray(EMPTY_CHAR.repeat(empty));
-  const percentStr = `${Math.round(percentage * 100)}%`.padStart(4);
-
-  return `[${filledStr}${emptyStr}] ${percentStr}`;
 }
 
 /**
@@ -59,24 +29,20 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
- * Renders the download progress line.
+ * Formats speed to human-readable string.
  */
-export function renderDownloadProgress(
-  filename: string,
-  bytesDownloaded: number,
-  totalBytes: number | null,
-  currentIndex: number,
-  totalFiles: number
-): string {
-  const decodedFilename = decodeForDisplay(filename);
-  const truncatedFilename = truncateFilename(decodedFilename, 40);
-  const bar = renderProgressBar(bytesDownloaded, totalBytes);
-  const counter = chalk.gray(`${(currentIndex + 1).toString().padStart(String(totalFiles).length)}/${totalFiles}`);
-  const size = totalBytes !== null
-    ? chalk.gray(`${formatBytes(bytesDownloaded)}/${formatBytes(totalBytes)}`)
-    : chalk.gray(formatBytes(bytesDownloaded));
+function formatSpeed(bytesPerSecond: number): string {
+  if (bytesPerSecond === 0) {
+    return '0 KB/s';
+  }
 
-  return `${chalk.white('Downloading:')} ${chalk.cyan(truncatedFilename)}\n${bar}  ${size}  ${counter}`;
+  const kbps = bytesPerSecond / 1024;
+  if (kbps < 1024) {
+    return `${kbps.toFixed(1)} KB/s`;
+  }
+
+  const mbps = kbps / 1024;
+  return `${mbps.toFixed(1)} MB/s`;
 }
 
 /**
@@ -89,11 +55,83 @@ function truncateFilename(filename: string, maxLength: number): string {
 
   const ext = filename.lastIndexOf('.');
   if (ext > 0 && filename.length - ext <= 6) {
-    // Preserve extension
     const extension = filename.slice(ext);
     const baseName = filename.slice(0, maxLength - extension.length - 3);
     return `${baseName}...${extension}`;
   }
 
   return filename.slice(0, maxLength - 3) + '...';
+}
+
+/**
+ * Progress bar manager using cli-progress.
+ */
+export class ProgressBar {
+  private bar: cliProgress.SingleBar;
+  private startTime: number = 0;
+  // Cached values to avoid recalculation on every update
+  private truncatedFilename: string = '';
+  private fileProgressStr: string = '';
+  private totalBytesStr: string = '';
+
+  constructor() {
+    this.bar = new cliProgress.SingleBar({
+      format: `${chalk.cyan('{filename}')} |${chalk.green('{bar}')}| {percentage}% | {size} | {speed} | {fileProgress}`,
+      barCompleteChar: '\u2588',
+      barIncompleteChar: '\u2591',
+      hideCursor: true,
+      clearOnComplete: true,
+      stopOnComplete: false,
+      forceRedraw: true,
+    }, cliProgress.Presets.shades_classic);
+  }
+
+  /**
+   * Starts progress tracking for a new file.
+   */
+  start(filename: string, totalBytes: number | null, fileIndex: number, totalFiles: number): void {
+    this.startTime = Date.now();
+
+    // Cache values that don't change during download
+    this.truncatedFilename = truncateFilename(decodeForDisplay(filename), 40);
+    this.fileProgressStr = `${fileIndex + 1}/${totalFiles}`;
+    this.totalBytesStr = totalBytes !== null ? formatBytes(totalBytes) : '?';
+
+    const total = totalBytes ?? 0;
+    this.bar.start(total, 0, {
+      filename: this.truncatedFilename,
+      size: `0 B/${this.totalBytesStr}`,
+      speed: '-- KB/s',
+      fileProgress: this.fileProgressStr,
+    });
+  }
+
+  /**
+   * Updates the progress bar.
+   */
+  update(bytesDownloaded: number, _totalBytes: number | null): void {
+    const elapsed = (Date.now() - this.startTime) / 1000;
+    const speed = elapsed > 0 ? bytesDownloaded / elapsed : 0;
+
+    this.bar.update(bytesDownloaded, {
+      filename: this.truncatedFilename,
+      size: `${formatBytes(bytesDownloaded)}/${this.totalBytesStr}`,
+      speed: formatSpeed(speed),
+      fileProgress: this.fileProgressStr,
+    });
+  }
+
+  /**
+   * Stops the progress bar.
+   */
+  stop(): void {
+    this.bar.stop();
+  }
+}
+
+/**
+ * Creates a new progress bar instance.
+ */
+export function createProgressBar(): ProgressBar {
+  return new ProgressBar();
 }

@@ -34,11 +34,14 @@ async function checkExistingFile(
 
   // File exists - check Content-Length if possible
   try {
-    const { contentLength } = await fetchStream(url, {
+    const { contentLength, body } = await fetchStream(url, {
       userAgent: options.userAgent,
       timeoutMs: options.timeoutMs,
       retries: 0,
     });
+
+    // Cancel the body stream immediately - we only needed the headers
+    await body.cancel();
 
     if (contentLength !== null && contentLength === existingSize) {
       return { filename, url, status: 'skipped', bytesDownloaded: 0 };
@@ -84,15 +87,20 @@ export async function downloadFile(
     // Create write stream
     const writeStream = createWriteStream(tempPath);
 
-    // Track progress
+    // Track progress with throttling to reduce overhead
     let bytesDownloaded = 0;
+    let lastProgressUpdate = 0;
+    const PROGRESS_THROTTLE_MS = 100; // Update progress at most every 100ms
 
     // Create a transform stream to track progress
     const progressTracker = new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller): void {
         bytesDownloaded += chunk.length;
 
-        if (onProgress !== undefined) {
+        // Throttle progress updates to reduce overhead
+        const now = Date.now();
+        if (onProgress !== undefined && now - lastProgressUpdate >= PROGRESS_THROTTLE_MS) {
+          lastProgressUpdate = now;
           onProgress({
             filename,
             bytesDownloaded,

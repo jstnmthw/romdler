@@ -103,6 +103,35 @@ describe('downloader', () => {
       expect(result.status).toBe('skipped');
     });
 
+    it('re-downloads existing file when size differs', async () => {
+      const existingContent = 'short';
+      const newContent = 'much longer content here';
+      writeFileSync(join(TEST_DIR, 'partial.zip'), existingContent);
+
+      // First call (size check) returns different content-length
+      // Second call (actual download) returns the new content
+      mockFetchStream
+        .mockResolvedValueOnce({
+          body: createMockStream(''),
+          contentLength: newContent.length, // Different from existing file
+          status: 200,
+        })
+        .mockResolvedValueOnce({
+          body: createMockStream(newContent),
+          contentLength: newContent.length,
+          status: 200,
+        });
+
+      const result = await downloadFile(
+        'https://example.com/partial.zip',
+        'partial.zip',
+        defaultOptions
+      );
+
+      expect(result.status).toBe('downloaded');
+      expect(readFileSync(join(TEST_DIR, 'partial.zip'), 'utf-8')).toBe(newContent);
+    });
+
     it('returns failed status on download error', async () => {
       mockFetchStream.mockRejectedValue(
         new HttpError('http', 'HTTP 404: Not Found', false, 404)

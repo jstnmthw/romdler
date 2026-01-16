@@ -193,6 +193,32 @@ describe('http fetcher', () => {
         })
       );
     });
+
+    it('throws immediately on non-retryable error', async () => {
+      // DNS resolution failures or SSL errors are non-retryable
+      mockFetch.mockRejectedValueOnce(new Error('SSL certificate error'));
+
+      await expect(fetchWithRetry('https://example.com/', defaultOptions)).rejects.toMatchObject({
+        type: 'network',
+        message: 'SSL certificate error',
+        retryable: false,
+      });
+
+      // Should not retry
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles non-Error thrown values', async () => {
+      // Some environments might throw non-Error values
+      mockFetch.mockRejectedValueOnce('string error');
+
+      await expect(fetchWithRetry('https://example.com/', defaultOptions)).rejects.toMatchObject({
+        type: 'network',
+        retryable: false,
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('fetchHtml', () => {

@@ -143,5 +143,13 @@ describe('fs utilities', () => {
       // Should not throw
       await expect(safeDelete(filePath)).resolves.toBeUndefined();
     });
+
+    it('throws on non-ENOENT errors like deleting a directory', async () => {
+      const dirPath = join(TEST_DIR, 'subdir');
+      mkdirSync(dirPath);
+
+      // Trying to unlink a directory should throw EISDIR or EPERM
+      await expect(safeDelete(dirPath)).rejects.toThrow();
+    });
   });
 });

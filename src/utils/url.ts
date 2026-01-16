@@ -36,6 +36,34 @@ export function extractFilename(url: string): string {
 }
 
 /**
+ * Resolves URL and extracts filename in a single pass.
+ * More efficient than calling resolveUrl + extractFilename separately
+ * as it reuses the same URL object.
+ */
+export function resolveAndExtract(href: string, baseUrl: string): { url: string; filename: string } {
+  try {
+    const resolved = new URL(href, baseUrl);
+    const segments = resolved.pathname.split('/');
+    const lastSegment = segments[segments.length - 1];
+
+    let filename: string;
+    if (lastSegment === undefined || lastSegment === '') {
+      filename = 'index';
+    } else {
+      try {
+        filename = decodeURIComponent(lastSegment);
+      } catch {
+        filename = lastSegment;
+      }
+    }
+
+    return { url: resolved.href, filename };
+  } catch {
+    throw new Error(`Invalid URL: "${href}" with base "${baseUrl}"`);
+  }
+}
+
+/**
  * Validates that a URL uses HTTP or HTTPS protocol.
  */
 export function isValidHttpUrl(url: string): boolean {

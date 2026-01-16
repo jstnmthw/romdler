@@ -1,5 +1,5 @@
 import type { FilterConfig, FilterTarget, FilterExpression } from './types.js';
-import { parseFilterExpression, matchesExpression } from './expression-parser.js';
+import { parseFilterExpression, matchesExpression, matchesExpressionLower } from './expression-parser.js';
 
 /**
  * Applies whitelist and blacklist filters to a list of files.
@@ -20,11 +20,11 @@ export function applyFilters<T extends FilterTarget>(
   const blacklistExpr = parseFilterExpression(config.blacklist);
 
   return items.filter((item) => {
-    // Combine filename and linkText for matching
-    const searchText = `${item.filename} ${item.linkText}`;
+    // Combine filename and linkText for matching (lowercase once, reuse for both checks)
+    const searchText = `${item.filename} ${item.linkText}`.toLowerCase();
 
     // Check blacklist first - always exclude matches
-    if (blacklistExpr.length > 0 && matchesExpression(searchText, blacklistExpr)) {
+    if (blacklistExpr.length > 0 && matchesExpressionLower(searchText, blacklistExpr)) {
       return false;
     }
 
@@ -34,7 +34,7 @@ export function applyFilters<T extends FilterTarget>(
     }
 
     // Check whitelist - must match to be included
-    return matchesExpression(searchText, whitelistExpr);
+    return matchesExpressionLower(searchText, whitelistExpr);
   });
 }
 
@@ -48,9 +48,10 @@ export function createFilterFn(
   const blacklistExpr = parseFilterExpression(config.blacklist);
 
   return (item: FilterTarget): boolean => {
-    const searchText = `${item.filename} ${item.linkText}`;
+    // Lowercase once, reuse for both checks
+    const searchText = `${item.filename} ${item.linkText}`.toLowerCase();
 
-    if (blacklistExpr.length > 0 && matchesExpression(searchText, blacklistExpr)) {
+    if (blacklistExpr.length > 0 && matchesExpressionLower(searchText, blacklistExpr)) {
       return false;
     }
 
@@ -58,9 +59,9 @@ export function createFilterFn(
       return true;
     }
 
-    return matchesExpression(searchText, whitelistExpr);
+    return matchesExpressionLower(searchText, whitelistExpr);
   };
 }
 
-export { parseFilterExpression, matchesExpression };
+export { parseFilterExpression, matchesExpression, matchesExpressionLower };
 export type { FilterExpression };

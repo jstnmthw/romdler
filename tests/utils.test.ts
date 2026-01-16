@@ -5,6 +5,7 @@ import {
   isValidHttpUrl,
   sanitizeFilename,
   safePath,
+  resolveAndExtract,
 } from '../src/utils/index.js';
 import { resolve } from 'node:path';
 
@@ -69,6 +70,66 @@ describe('extractFilename', () => {
   });
 });
 
+describe('resolveAndExtract', () => {
+  const baseUrl = 'https://example.com/roms/snes/';
+
+  it('resolves URL and extracts filename in one pass', () => {
+    const result = resolveAndExtract('mario.zip', baseUrl);
+    expect(result.url).toBe('https://example.com/roms/snes/mario.zip');
+    expect(result.filename).toBe('mario.zip');
+  });
+
+  it('resolves relative URL with parent path', () => {
+    const result = resolveAndExtract('../nes/game.zip', baseUrl);
+    expect(result.url).toBe('https://example.com/roms/nes/game.zip');
+    expect(result.filename).toBe('game.zip');
+  });
+
+  it('preserves absolute URL', () => {
+    const result = resolveAndExtract('https://other.com/file.zip', baseUrl);
+    expect(result.url).toBe('https://other.com/file.zip');
+    expect(result.filename).toBe('file.zip');
+  });
+
+  it('decodes URL-encoded filename', () => {
+    const result = resolveAndExtract('game%20title.zip', baseUrl);
+    expect(result.url).toBe('https://example.com/roms/snes/game%20title.zip');
+    expect(result.filename).toBe('game title.zip');
+  });
+
+  it('returns index for trailing slash', () => {
+    const result = resolveAndExtract('subdir/', baseUrl);
+    expect(result.filename).toBe('index');
+  });
+
+  it('returns index for empty path', () => {
+    const result = resolveAndExtract('', 'https://example.com/');
+    expect(result.filename).toBe('index');
+  });
+
+  it('handles malformed percent encoding gracefully', () => {
+    // %ZZ is not valid percent encoding - should use raw value
+    const result = resolveAndExtract('file%ZZname.zip', baseUrl);
+    expect(result.filename).toBe('file%ZZname.zip');
+  });
+
+  it('throws on invalid URL', () => {
+    expect(() => resolveAndExtract('file.zip', 'not-a-valid-url')).toThrow(
+      'Invalid URL'
+    );
+  });
+});
+
+describe('extractFilename - edge cases', () => {
+  it('handles malformed URL by falling back to string split', () => {
+    // Force the catch path by passing something that will throw in URL constructor
+    // We need to mock URL to test this path properly, but we can test with a protocol-relative URL
+    // that some URL parsers might struggle with
+    const result = extractFilename('//example.com/path/file.zip');
+    expect(result).toBe('file.zip');
+  });
+});
+
 describe('isValidHttpUrl', () => {
   it('accepts http URL', () => {
     expect(isValidHttpUrl('http://example.com')).toBe(true);
@@ -129,6 +190,42 @@ describe('sanitizeFilename', () => {
     const result = sanitizeFilename(longName);
     expect(result.length).toBeLessThanOrEqual(200);
     expect(result.endsWith('.zip')).toBe(true);
+  });
+
+  it('truncates long filename without short extension', () => {
+    // Test when extension is too long (> 10 chars) - should just truncate
+    const longName = 'a'.repeat(250) + '.verylongextension';
+    const result = sanitizeFilename(longName);
+    expect(result.length).toBe(200);
+    expect(result.endsWith('.verylongextension')).toBe(false);
+  });
+
+  it('truncates long filename with no extension', () => {
+    const longName = 'a'.repeat(250);
+    const result = sanitizeFilename(longName);
+    expect(result.length).toBe(200);
+  });
+
+  it('handles filename with dot but no extension', () => {
+    // Dot at position 0 should be removed (leading dot), then become just the name
+    const result = sanitizeFilename('.a'.repeat(150));
+    expect(result.length).toBeLessThanOrEqual(200);
+  });
+
+  it('handles control characters throughout string', () => {
+    expect(sanitizeFilename('file\x01\x02\x03name.zip')).toBe('filename.zip');
+    expect(sanitizeFilename('test\x7ffile.zip')).toBe('testfile.zip');
+  });
+
+  it('handles special URL-encoded characters', () => {
+    // Test various URL-encoded characters
+    expect(sanitizeFilename('file%26name.zip')).toBe('file&name.zip'); // &
+    expect(sanitizeFilename('file%23tag.zip')).toBe('file#tag.zip');   // #
+  });
+
+  it('handles failed URL decoding gracefully', () => {
+    // Invalid percent encoding should be kept as-is
+    expect(sanitizeFilename('file%ZZname.zip')).toBe('file%ZZname.zip');
   });
 });
 

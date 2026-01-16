@@ -46,6 +46,24 @@ export function matchesExpression(
   }
 
   const lowerTarget = target.toLowerCase();
+  return matchesExpressionLower(lowerTarget, expression);
+}
+
+/**
+ * Checks if a pre-lowercased target string matches a filter expression.
+ * More efficient when matching multiple times against different expressions.
+ *
+ * @param lowerTarget - The string to match against (must already be lowercased)
+ * @param expression - The parsed filter expression
+ * @returns true if any OR clause matches (where all AND terms in that clause match)
+ */
+export function matchesExpressionLower(
+  lowerTarget: string,
+  expression: FilterExpression
+): boolean {
+  if (expression.length === 0) {
+    return false;
+  }
 
   // OR across entries: if any entry matches, return true
   return expression.some((andTerms) => {

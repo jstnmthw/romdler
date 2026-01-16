@@ -62,6 +62,8 @@ export async function fetchWithRetry(
 
       // Check for retryable status codes
       if (RETRYABLE_STATUS_CODES.has(response.status)) {
+        // Cancel/consume the response body to free resources
+        await response.body?.cancel();
         lastError = new HttpError(
           'http',
           `HTTP ${response.status}: ${response.statusText}`,

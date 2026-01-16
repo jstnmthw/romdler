@@ -1,5 +1,10 @@
 import { resolve, basename } from 'node:path';
 
+// Pre-compiled regexes for sanitizeFilename (avoid recompilation per call)
+const REPLACE_WITH_UNDERSCORE_REGEX = /[/\\<>:"|?*]/g;  // Replace these with underscore
+const REMOVE_CHARS_REGEX = /[\x00-\x1f\x7f]/g;          // Remove control chars entirely
+const LEADING_DOTS_REGEX = /^\.+/;
+
 /**
  * Sanitizes a filename to prevent path traversal and other security issues.
  * - Removes path separators
@@ -18,20 +23,14 @@ export function sanitizeFilename(filename: string): string {
     // If decoding fails, use as-is
   }
 
-  // Remove path separators
-  safe = safe.replace(/[/\\]/g, '_');
+  // Replace path separators and Windows-reserved chars with underscore
+  safe = safe.replace(REPLACE_WITH_UNDERSCORE_REGEX, '_');
 
-  // Remove null bytes
-  safe = safe.replace(/\0/g, '');
+  // Remove control characters (including null bytes) entirely
+  safe = safe.replace(REMOVE_CHARS_REGEX, '');
 
   // Remove leading dots (prevents hidden files and parent directory)
-  safe = safe.replace(/^\.+/, '');
-
-  // Remove control characters
-  safe = safe.replace(/[\x00-\x1f\x7f]/g, '');
-
-  // Replace problematic characters on Windows
-  safe = safe.replace(/[<>:"|?*]/g, '_');
+  safe = safe.replace(LEADING_DOTS_REGEX, '');
 
   // Trim whitespace
   safe = safe.trim();

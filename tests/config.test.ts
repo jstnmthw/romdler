@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../src/config/index.js';
 
@@ -50,6 +50,26 @@ describe('config loader', () => {
 
   it('throws on missing config file', () => {
     expect(() => loadConfig('/nonexistent/path.json')).toThrow('Config file not found');
+  });
+
+  it('throws on read permission error', () => {
+    const noReadPath = join(TEST_DIR, 'noread.config.json');
+    writeFileSync(noReadPath, '{}');
+    chmodSync(noReadPath, 0o000); // Remove all permissions
+
+    try {
+      expect(() => loadConfig(noReadPath)).toThrow('Failed to read config file');
+    } finally {
+      // Restore permissions so cleanup works
+      chmodSync(noReadPath, 0o644);
+    }
+  });
+
+  it('throws on reading a directory as file', () => {
+    const dirPath = join(TEST_DIR, 'subdir');
+    mkdirSync(dirPath);
+
+    expect(() => loadConfig(dirPath)).toThrow('Failed to read config file');
   });
 
   it('throws on invalid JSON', () => {

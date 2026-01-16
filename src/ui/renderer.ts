@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import type { UrlStats, LogLevel } from '../types/index.js';
 import type { DownloadProgress, DownloadResult } from '../downloader/types.js';
 import { printBanner, printDryRunBanner } from './banner.js';
-import { renderDownloadProgress } from './progress.js';
+import { ProgressBar } from './progress.js';
 import { renderUrlSummary, renderFinalSummary } from './summary.js';
 
 /**
@@ -24,7 +24,8 @@ function decodeForDisplay(str: string): string {
 export class Renderer {
   private isTTY: boolean;
   private logLevel: LogLevel;
-  private progressLines = 0;
+  private progressBar: ProgressBar | null = null;
+  private currentFileIndex: number = -1;
 
   constructor(logLevel: LogLevel = 'info') {
     this.isTTY = process.stdout.isTTY === true;
@@ -133,46 +134,30 @@ export class Renderer {
   }
 
   /**
-   * Clears the current progress lines for in-place updates.
-   */
-  private clearProgress(): void {
-    if (!this.isTTY || this.progressLines === 0) {
-      return;
-    }
-
-    // Move cursor up and clear lines
-    for (let i = 0; i < this.progressLines; i++) {
-      process.stdout.write('\x1B[A'); // Move up
-      process.stdout.write('\x1B[K'); // Clear line
-    }
-    this.progressLines = 0;
-  }
-
-  /**
-   * Updates the download progress in place.
+   * Updates the download progress.
    */
   downloadProgress(
     progress: DownloadProgress,
     currentIndex: number,
     totalFiles: number
   ): void {
-    if (this.logLevel === 'silent') {
+    if (this.logLevel === 'silent' || !this.isTTY) {
       return;
     }
 
-    const output = renderDownloadProgress(
-      progress.filename,
-      progress.bytesDownloaded,
-      progress.totalBytes,
-      currentIndex,
-      totalFiles
-    );
-
-    if (this.isTTY) {
-      this.clearProgress();
-      process.stdout.write(output);
-      this.progressLines = output.split('\n').length;
+    // Start/restart progress bar for each new file
+    if (currentIndex !== this.currentFileIndex) {
+      if (this.progressBar !== null) {
+        this.progressBar.stop();
+      } else {
+        // Create progress bar once and reuse
+        this.progressBar = new ProgressBar();
+      }
+      this.progressBar.start(progress.filename, progress.totalBytes, currentIndex, totalFiles);
+      this.currentFileIndex = currentIndex;
     }
+
+    this.progressBar?.update(progress.bytesDownloaded, progress.totalBytes);
   }
 
   /**
@@ -183,7 +168,11 @@ export class Renderer {
       return;
     }
 
-    this.clearProgress();
+    // Stop the progress bar before printing completion
+    if (this.progressBar !== null) {
+      this.progressBar.stop();
+      this.progressBar = null;
+    }
 
     const statusIcon =
       result.status === 'downloaded'

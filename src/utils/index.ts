@@ -1,4 +1,4 @@
-export { resolveUrl, extractFilename, isValidHttpUrl } from './url.js';
+export { resolveUrl, extractFilename, isValidHttpUrl, resolveAndExtract } from './url.js';
 export { sanitizeFilename, safePath, tempFilename } from './filename.js';
 export {
   ensureDir,

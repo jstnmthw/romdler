@@ -11,7 +11,7 @@ import {
   type DownloadProgress,
 } from './downloader/index.js';
 import { createRenderer, type Renderer } from './ui/index.js';
-import { resolveUrl, extractFilename, sanitizeFilename } from './utils/index.js';
+import { resolveAndExtract, sanitizeFilename } from './utils/index.js';
 import type { FileEntry, UrlStats } from './types/index.js';
 
 async function processUrl(
@@ -67,14 +67,13 @@ async function processUrl(
   const zipLinks = filterZipLinks(parseResult.links);
   stats.totalFound = zipLinks.length;
 
-  // Build file entries with resolved URLs
+  // Build file entries with resolved URLs (single URL parse per link)
   const fileEntries: FileEntry[] = zipLinks.map((link) => {
-    const resolvedUrl = resolveUrl(link.href, url);
-    const filename = sanitizeFilename(extractFilename(resolvedUrl));
+    const { url: resolvedUrl, filename: rawFilename } = resolveAndExtract(link.href, url);
     return {
       href: link.href,
       url: resolvedUrl,
-      filename,
+      filename: sanitizeFilename(rawFilename),
       linkText: link.text,
     };
   });

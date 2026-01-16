@@ -107,6 +107,18 @@ describe('parseTableLinks', () => {
     expect(result.links).toHaveLength(1);
     expect(result.links[0]?.href).toBe('file.zip');
   });
+
+  it('filters out links with parent directory text', () => {
+    const html = `
+      <table id="list">
+        <tr><td class="link"><a href="/some/path">Parent Directory</a></td></tr>
+        <tr><td class="link"><a href="file.zip">file.zip</a></td></tr>
+      </table>
+    `;
+    const result = parseTableLinks(html, 'list');
+    expect(result.links).toHaveLength(1);
+    expect(result.links[0]?.href).toBe('file.zip');
+  });
 });
 
 describe('filterZipLinks', () => {
