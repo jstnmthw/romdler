@@ -1,9 +1,9 @@
 {
   "urls": [
-    "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/"
+    "https://example.com/roms/gbc"
   ],
   "tableId": "list",
-  "downloadDir": "./downloads/roms/snes",
+  "downloadDir": "./downloads/roms/GBC",
   "whitelist": ["USA"],
   "blacklist": [],
   "concurrency": 1,
