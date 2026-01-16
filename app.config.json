@@ -1,0 +1,14 @@
+{
+  "urls": [
+    "https://example.com/snes/"
+  ],
+  "tableId": "list",
+  "downloadDir": "./downloads",
+  "whitelist": ["USA"],
+  "blacklist": [],
+  "concurrency": 1,
+  "userAgent": "ROM-Downloader/1.0 (Archival Tool)",
+  "requestTimeoutMs": 30000,
+  "retries": 2,
+  "logLevel": "info"
+}
