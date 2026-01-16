@@ -142,8 +142,11 @@ export class ScreenScraperClient {
   }
 
   /**
-   * Parse the API response into a simpler structure
+   * Parse the API response into a simpler structure.
+   * Complexity note: Simple null-safe data extraction from nested API response.
+   * Complexity from optional chaining on fixed schema. No planned extensibility.
    */
+  // eslint-disable-next-line complexity
   private parseGameResponse(data: SSResponse): GameLookupResult | null {
     const game = data.response?.jeu;
 

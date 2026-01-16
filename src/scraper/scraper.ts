@@ -15,8 +15,12 @@ import {
 } from './reporter.js';
 
 /**
- * Main scraper orchestrator
+ * Main scraper orchestrator.
+ * Complexity note: Sequential orchestrator with validation, scanning, filtering, processing,
+ * and reporting phases. Splitting would fragment a linear workflow into artificial
+ * abstractions without improving readability. No planned extensibility.
  */
+// eslint-disable-next-line complexity
 export async function runScraper(
   config: Config,
   options: ScrapeOptions

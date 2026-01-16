@@ -38,6 +38,12 @@ function parseCommaSeparated(value: string): string[] {
   return value.split(',').map((s) => s.trim()).filter((s): s is string => s.length > 0);
 }
 
+/**
+ * Parse CLI arguments into typed structure.
+ * Complexity note: Linear argument parser with fixed flag set. Extracting to a registry
+ * pattern would over-engineer a simple CLI with no planned extensibility.
+ */
+// eslint-disable-next-line complexity
 export function parseArgs(args: string[]): CliArgs {
   // Check if first non-flag argument is a command
   let command: Command = 'download';
