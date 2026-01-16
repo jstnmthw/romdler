@@ -7,7 +7,7 @@ export const configSchema = z.object({
   whitelist: z.array(z.string()).default([]),
   blacklist: z.array(z.string()).default([]),
   concurrency: z.number().int().min(1).max(10).default(1),
-  userAgent: z.string().default('ROM-Downloader/1.0 (Archival Tool)'),
+  userAgent: z.string().default('Wget/1.21.2'),
   requestTimeoutMs: z.number().int().min(1000).max(300000).default(30000),
   retries: z.number().int().min(0).max(10).default(2),
   logLevel: z.enum(['debug', 'info', 'silent']).default('info'),
