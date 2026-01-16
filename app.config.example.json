@@ -1,0 +1,34 @@
+{
+  "urls": [
+    "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/"
+  ],
+  "tableId": "list",
+  "downloadDir": "./downloads/roms/snes",
+  "whitelist": ["USA"],
+  "blacklist": [],
+  "concurrency": 1,
+  "userAgent": "Wget/1.21.2",
+  "requestTimeoutMs": 30000,
+  "retries": 2,
+  "logLevel": "info",
+  "scraper": {
+    "enabled": true,
+    "source": "screenscraper",
+    "credentials": {
+      "devId": "YOUR_DEV_ID",
+      "devPassword": "YOUR_DEV_PASSWORD",
+      "userId": "YOUR_SCREENSCRAPER_USERNAME",
+      "userPassword": "YOUR_SCREENSCRAPER_PASSWORD"
+    },
+    "systemId": 4,
+    "mediaType": "box-2D",
+    "regionPriority": ["us", "wor", "eu", "jp"],
+    "resize": {
+      "enabled": false,
+      "maxWidth": 300,
+      "maxHeight": 300
+    },
+    "skipExisting": true,
+    "rateLimitMs": 1000
+  }
+}

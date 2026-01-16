@@ -151,6 +151,76 @@ A slim, optimized Node.js micro app that downloads ZIP files from archival websi
 **Files:**
 - `index.ts` - Shared type definitions
 
+### 9. Scraper (`src/scraper/`)
+
+**Responsibilities:**
+- Scan ROM directories for files
+- Calculate CRC32 hashes for ROM identification
+- Query ScreenScraper API for game metadata and artwork
+- Download and save cover art images
+- Generate scrape reports
+
+**Submodules:**
+
+#### 9.1 Scanner (`scanner.ts`)
+- Scans directories for ROM files by extension
+- Filters out Imgs/ subdirectory and hidden files
+- Returns RomFile objects with path, filename, stem, extension, size
+
+#### 9.2 Hasher (`hasher.ts`)
+- Calculates CRC32 hashes using streaming (64KB chunks)
+- Memory efficient for large ROM files
+- Returns 8-character uppercase hex string
+
+#### 9.3 ScreenScraper Client (`screenscraper/client.ts`)
+- Authenticates with ScreenScraper API
+- Looks up games by CRC32 hash + system ID
+- Implements rate limiting between requests
+- Handles retries with exponential backoff
+- Selects media by type and region preference
+
+#### 9.4 Image Downloader (`downloader.ts`)
+- Downloads images from ScreenScraper media URLs
+- Uses atomic writes (temp file → rename)
+- Determines file extension from Content-Type
+- Creates Imgs/ subdirectory automatically
+
+#### 9.5 Reporter (`reporter.ts`)
+- Renders scrape progress and results
+- Calculates summary statistics
+- Formats dry-run preview output
+
+**Files:**
+```
+src/scraper/
+├── index.ts              # Public exports
+├── types.ts              # Scraper types (RomFile, ScrapeResult, etc.)
+├── scanner.ts            # ROM directory scanning
+├── hasher.ts             # CRC32 hash calculation
+├── downloader.ts         # Image download logic
+├── reporter.ts           # Results formatting
+├── scraper.ts            # Main orchestrator
+└── screenscraper/
+    ├── index.ts          # Submodule exports
+    ├── client.ts         # API client
+    ├── types.ts          # API response types
+    └── systems.ts        # System ID mappings
+```
+
+**Data Flow:**
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Scanner   │───>│   Hasher    │───>│  SS Client  │───>│ Downloader  │
+│ (find ROMs) │    │ (calc CRC)  │    │ (API query) │    │ (get image) │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                                                │
+                                                                ▼
+                                                         ┌─────────────┐
+                                                         │  Reporter   │
+                                                         │ (summary)   │
+                                                         └─────────────┘
+```
+
 ---
 
 ## Data Flow
@@ -516,14 +586,20 @@ describe('filename', () => {
 
 ## Future Enhancements
 
+### Implemented
+- **ROM Artwork Scraper**: Download cover art from ScreenScraper.fr ✓
+
+### Planned
 1. **Resume Support**: Track partial downloads, resume on restart
 2. **Checksum Verification**: Verify downloaded files against known checksums
 3. **ETag Caching**: Skip download if ETag matches previous download
 4. **Manifest File**: Generate JSON manifest of downloaded files
-5. **Rate Limiting**: Configurable delay between requests
-6. **Proxy Support**: HTTP/SOCKS proxy configuration
-7. **Multi-Table Support**: Handle pages with multiple tables
-8. **Regex Filters**: Support regex patterns in whitelist/blacklist
+5. **Proxy Support**: HTTP/SOCKS proxy configuration
+6. **Multi-Table Support**: Handle pages with multiple tables
+7. **Regex Filters**: Support regex patterns in whitelist/blacklist
+8. **Image Resizing**: Resize scraped images for device optimization (requires sharp)
+9. **Alternative Scraper Sources**: TheGamesDB, LaunchBox support
+10. **Scrape Progress Persistence**: Resume interrupted scrape sessions
 
 ---
 
@@ -552,6 +628,9 @@ describe('filename', () => {
 ```
 rom-downloader/
 ├── src/
+│   ├── cli/
+│   │   ├── index.ts
+│   │   └── args.ts
 │   ├── config/
 │   │   ├── index.ts
 │   │   ├── loader.ts
@@ -573,6 +652,19 @@ rom-downloader/
 │   │   ├── index.ts
 │   │   ├── downloader.ts
 │   │   └── types.ts
+│   ├── scraper/
+│   │   ├── index.ts
+│   │   ├── types.ts
+│   │   ├── scanner.ts
+│   │   ├── hasher.ts
+│   │   ├── downloader.ts
+│   │   ├── reporter.ts
+│   │   ├── scraper.ts
+│   │   └── screenscraper/
+│   │       ├── index.ts
+│   │       ├── client.ts
+│   │       ├── types.ts
+│   │       └── systems.ts
 │   ├── ui/
 │   │   ├── index.ts
 │   │   ├── renderer.ts
@@ -591,7 +683,10 @@ rom-downloader/
 │   ├── filter.test.ts
 │   ├── parser.test.ts
 │   └── utils.test.ts
+├── docs/
+│   └── ROM_IMAGE_PAIRING_FEATURE.md
 ├── app.config.json
+├── app.config.example.json
 ├── package.json
 ├── tsconfig.json
 ├── .eslintrc.json

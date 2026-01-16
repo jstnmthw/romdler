@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { loadConfig, type Config } from './config/index.js';
-import { parseArgs } from './cli/index.js';
+import { parseArgs, type ScrapeCliArgs } from './cli/index.js';
 import { fetchHtml, isHttpError } from './http/index.js';
 import { parseTableLinks, filterZipLinks } from './parser/index.js';
 import { applyFilters } from './filter/index.js';
@@ -12,6 +12,7 @@ import {
 } from './downloader/index.js';
 import { createRenderer, type Renderer } from './ui/index.js';
 import { resolveAndExtract, sanitizeFilename } from './utils/index.js';
+import { runScraper } from './scraper/index.js';
 import type { FileEntry, UrlStats } from './types/index.js';
 
 async function processUrl(
@@ -153,29 +154,18 @@ async function processUrl(
   return stats;
 }
 
-async function main(): Promise<void> {
-  const cliArgs = parseArgs(process.argv.slice(2));
-
-  // Load configuration
-  let config: Config;
-  try {
-    config = loadConfig(cliArgs.configPath);
-  } catch (err) {
-    console.error(
-      err instanceof Error ? err.message : 'Failed to load configuration'
-    );
-    process.exit(1);
-  }
-
-  const renderer = createRenderer(config.logLevel);
-  renderer.banner(cliArgs.dryRun);
-
+async function runDownloadCommand(
+  config: Config,
+  renderer: Renderer,
+  dryRun: boolean,
+  limit?: number
+): Promise<void> {
   const allStats: UrlStats[] = [];
   let hasFailures = false;
 
   // Process each URL
   for (const url of config.urls) {
-    const stats = await processUrl(url, config, renderer, cliArgs.dryRun, cliArgs.limit);
+    const stats = await processUrl(url, config, renderer, dryRun, limit);
     allStats.push(stats);
     renderer.urlSummary(stats);
 
@@ -191,6 +181,54 @@ async function main(): Promise<void> {
 
   // Exit with appropriate code
   process.exit(hasFailures ? 1 : 0);
+}
+
+async function runScrapeCommand(
+  config: Config,
+  cliArgs: ScrapeCliArgs
+): Promise<void> {
+  try {
+    const results = await runScraper(config, {
+      dryRun: cliArgs.dryRun,
+      force: cliArgs.force,
+      mediaType: cliArgs.mediaType,
+      regionPriority: cliArgs.regionPriority,
+      limit: cliArgs.limit,
+    });
+
+    // Check for failures
+    const hasFailures = results.some((r) => r.status === 'failed');
+    process.exit(hasFailures ? 1 : 0);
+  } catch (err) {
+    console.error(
+      err instanceof Error ? err.message : 'Scraper failed'
+    );
+    process.exit(1);
+  }
+}
+
+async function main(): Promise<void> {
+  const cliArgs = parseArgs(process.argv.slice(2));
+
+  // Load configuration
+  let config: Config;
+  try {
+    config = loadConfig(cliArgs.configPath);
+  } catch (err) {
+    console.error(
+      err instanceof Error ? err.message : 'Failed to load configuration'
+    );
+    process.exit(1);
+  }
+
+  // Dispatch based on command
+  if (cliArgs.command === 'scrape') {
+    await runScrapeCommand(config, cliArgs);
+  } else {
+    const renderer = createRenderer(config.logLevel);
+    renderer.banner(cliArgs.dryRun);
+    await runDownloadCommand(config, renderer, cliArgs.dryRun, cliArgs.limit);
+  }
 }
 
 // Run main
