@@ -23,6 +23,10 @@ export type ArtworkLookupResult = {
   mediaUrl?: string;
   /** Source-specific metadata */
   metadata?: Record<string, unknown>;
+  /** True if this was a fuzzy/best-effort match (not exact) */
+  bestEffort?: boolean;
+  /** The original ROM name before transformation (for best-effort matches) */
+  originalName?: string;
 };
 
 /** Parameters for artwork lookup */
@@ -79,6 +83,14 @@ export interface ArtworkAdapter {
    * Optional cleanup when adapter is no longer needed
    */
   dispose?(): Promise<void>;
+
+  /**
+   * Optional prefetch for adapters that use manifests.
+   * Called before processing ROMs to fetch and cache data.
+   * Throws on errors to enable fail-fast behavior.
+   * @param systemId Platform/system ID
+   */
+  prefetch?(systemId: number): Promise<void>;
 }
 
 /** Configuration for a single adapter source */

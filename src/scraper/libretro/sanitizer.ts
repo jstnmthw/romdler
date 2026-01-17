@@ -8,8 +8,11 @@
  * Reference: https://github.com/libretro-thumbnails/libretro-thumbnails#naming-convention
  */
 
-/** Characters that must be replaced with underscore in Libretro filenames */
-const INVALID_CHARS = /[&*/:`<>?\\|"]/g;
+/** Characters that must be replaced with underscore in Libretro filenames (global for replace) */
+const INVALID_CHARS_GLOBAL = /[&*/:`<>?\\|"]/g;
+
+/** Characters that are invalid (non-global for test) */
+const INVALID_CHARS_TEST = /[&*/:`<>?\\|"]/;
 
 /**
  * Sanitize a ROM filename stem for use in Libretro thumbnail URLs.
@@ -23,7 +26,7 @@ const INVALID_CHARS = /[&*/:`<>?\\|"]/g;
  * sanitizeFilename("What's My Name?") // "What's My Name_"
  */
 export function sanitizeFilename(stem: string): string {
-  return stem.replace(INVALID_CHARS, '_');
+  return stem.replace(INVALID_CHARS_GLOBAL, '_');
 }
 
 /**
@@ -33,5 +36,5 @@ export function sanitizeFilename(stem: string): string {
  * @returns true if the filename contains invalid characters
  */
 export function hasInvalidChars(stem: string): boolean {
-  return INVALID_CHARS.test(stem);
+  return INVALID_CHARS_TEST.test(stem);
 }

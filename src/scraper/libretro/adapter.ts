@@ -6,20 +6,7 @@ import type {
 } from '../adapters/types.js';
 import { getLibretroSystemName, SUPPORTED_SYSTEM_IDS } from './systems.js';
 import { sanitizeFilename } from './sanitizer.js';
-
-/** Base URL for Libretro thumbnail server */
-const LIBRETRO_BASE_URL = 'https://thumbnails.libretro.com';
-
-/** Libretro media types mapped to folder names */
-const MEDIA_TYPE_FOLDERS: Record<string, string> = {
-  'box-2D': 'Named_Boxarts',
-  'boxart': 'Named_Boxarts',
-  'ss': 'Named_Snaps',
-  'snap': 'Named_Snaps',
-  'screenshot': 'Named_Snaps',
-  'sstitle': 'Named_Titles',
-  'title': 'Named_Titles',
-};
+import { LibretroManifest } from './manifest.js';
 
 /** Media types available from Libretro */
 const LIBRETRO_MEDIA_TYPES = ['box-2D', 'boxart', 'ss', 'snap', 'screenshot', 'sstitle', 'title'];
@@ -34,8 +21,16 @@ export type LibretroAdapterOptions = {
 
 /**
  * Libretro Thumbnails artwork adapter.
- * Uses filename-based lookup against the libretro-thumbnails CDN.
- * No authentication required.
+ *
+ * Uses a manifest-based approach for fast matching:
+ * 1. Fetches file listing from GitHub API once per system
+ * 2. Matches locally against the manifest (no network calls per ROM)
+ * 3. Only makes network request for actual download
+ *
+ * Matching priority:
+ * 1. Exact match
+ * 2. Variant-stripped match (remove Proto, Beta, etc. but keep region)
+ * 3. Title-only match (find best match by base title)
  */
 export class LibretroAdapter implements ArtworkAdapter {
   readonly id = 'libretro';
@@ -51,16 +46,28 @@ export class LibretroAdapter implements ArtworkAdapter {
   private userAgent: string;
   private timeoutMs: number;
   private initialized = false;
+  private manifest: LibretroManifest;
 
   constructor(options: LibretroAdapterOptions = {}) {
-    this.userAgent = options.userAgent ?? 'Wget/1.21.2';
-    this.timeoutMs = options.timeoutMs ?? 10000;
+    this.userAgent = options.userAgent ?? 'romdler/1.0';
+    this.timeoutMs = options.timeoutMs ?? 30000;
+    this.manifest = new LibretroManifest({
+      userAgent: this.userAgent,
+      timeoutMs: this.timeoutMs,
+    });
   }
 
   initialize(): Promise<boolean> {
-    // No initialization needed for Libretro
     this.initialized = true;
     return Promise.resolve(true);
+  }
+
+  /**
+   * Prefetch manifest for a system. Throws on errors.
+   * Call this before processing ROMs to fail fast on API errors.
+   */
+  async prefetch(systemId: number): Promise<void> {
+    await this.manifest.prefetch(systemId);
   }
 
   supportsSystem(systemId: number): boolean {
@@ -68,8 +75,9 @@ export class LibretroAdapter implements ArtworkAdapter {
   }
 
   getRateLimitDelay(): number {
-    // Libretro CDN doesn't have strict rate limits, use minimal delay
-    return 100;
+    // With manifest-based matching, we only hit CDN for actual downloads
+    // Use minimal delay since lookups are local
+    return 50;
   }
 
   async lookup(params: LookupParams): Promise<ArtworkLookupResult | null> {
@@ -77,83 +85,49 @@ export class LibretroAdapter implements ArtworkAdapter {
       return null;
     }
 
-    const systemName = getLibretroSystemName(params.systemId);
-    if (systemName === undefined) {
+    // Get manifest for this system/media type
+    const manifestData = await this.manifest.getManifest(
+      params.systemId,
+      params.mediaType
+    );
+
+    if (manifestData === null) {
       return { found: false };
     }
 
-    // Build URL for the thumbnail
-    const mediaUrl = this.buildThumbnailUrl(
-      systemName,
-      params.rom.stem,
-      params.mediaType
+    // Sanitize the filename for matching
+    const sanitizedStem = sanitizeFilename(params.rom.stem);
+
+    // Find match in manifest (handles exact, variant-stripped, and title-only matching)
+    const matchResult = this.manifest.findMatch(manifestData, sanitizedStem);
+
+    if (matchResult === null) {
+      return { found: false };
+    }
+
+    // Build the download URL
+    const mediaUrl = this.manifest.buildUrl(
+      params.systemId,
+      params.mediaType,
+      matchResult.match
     );
 
     if (mediaUrl === null) {
       return { found: false };
     }
 
-    // Check if the thumbnail exists
-    const exists = await this.checkUrlExists(mediaUrl);
-
-    if (!exists) {
-      return { found: false };
-    }
-
     return {
       found: true,
-      gameName: params.rom.stem,
+      gameName: matchResult.match,
       mediaUrl,
+      bestEffort: matchResult.bestEffort,
+      originalName: matchResult.bestEffort ? params.rom.stem : undefined,
     };
-  }
-
-  /**
-   * Build the thumbnail URL for a game
-   */
-  private buildThumbnailUrl(
-    systemName: string,
-    gameStem: string,
-    mediaType: string
-  ): string | null {
-    const folder = MEDIA_TYPE_FOLDERS[mediaType];
-
-    if (folder === undefined) {
-      // Default to boxart
-      return this.buildThumbnailUrl(systemName, gameStem, 'box-2D');
-    }
-
-    const sanitized = sanitizeFilename(gameStem);
-    const encodedSystem = encodeURIComponent(systemName);
-    const encodedName = encodeURIComponent(sanitized);
-
-    return `${LIBRETRO_BASE_URL}/${encodedSystem}/${folder}/${encodedName}.png`;
-  }
-
-  /**
-   * Check if a URL exists (HEAD request)
-   */
-  private async checkUrlExists(url: string): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
-      const response = await fetch(url, {
-        method: 'HEAD',
-        headers: {
-          'User-Agent': this.userAgent,
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-      return response.ok;
-    } catch {
-      return false;
-    }
   }
 
   dispose(): Promise<void> {
     this.initialized = false;
+    this.manifest.clearCache();
     return Promise.resolve();
   }
 }

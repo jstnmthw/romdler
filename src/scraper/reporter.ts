@@ -21,6 +21,9 @@ function formatDuration(ms: number): string {
  * Render scrape summary to console
  */
 export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): string {
+  // Calculate exact matches (downloaded minus best-effort)
+  const exactMatches = summary.downloaded - summary.bestEffort;
+
   const lines: string[] = [
     '',
     chalk.cyan.bold('─'.repeat(50)),
@@ -28,6 +31,15 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
     chalk.cyan.bold('─'.repeat(50)),
     `  ${chalk.gray('Total ROMs:')}      ${chalk.white(summary.totalRoms)}`,
     `  ${chalk.gray('Downloaded:')}      ${chalk.green(summary.downloaded)}`,
+  ];
+
+  // Show breakdown of exact vs best-effort if there are any best-effort matches
+  if (summary.bestEffort > 0) {
+    lines.push(`    ${chalk.gray('Exact:')}          ${chalk.green(exactMatches)}`);
+    lines.push(`    ${chalk.gray('Best effort:')}    ${chalk.hex('#FFA500')(summary.bestEffort)}`);
+  }
+
+  lines.push(
     `  ${chalk.gray('Skipped:')}         ${chalk.yellow(summary.skipped)}`,
     `  ${chalk.gray('Not found:')}       ${chalk.blue(summary.notFound)}`,
     `  ${chalk.gray('Failed:')}          ${summary.failed > 0 ? chalk.red(summary.failed) : chalk.white(summary.failed)}`,
@@ -35,8 +47,8 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
     `  ${chalk.gray('Duration:')}        ${chalk.white(formatDuration(summary.elapsedMs))}`,
     `  ${chalk.gray('Output:')}          ${chalk.cyan(imgsDir)}`,
     chalk.cyan.bold('─'.repeat(50)),
-    '',
-  ];
+    ''
+  );
 
   if (summary.failed > 0) {
     lines.push(chalk.red('Some images failed to download. Check the logs above for details.'));
@@ -48,8 +60,16 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
     lines.push('');
   }
 
+  if (summary.bestEffort > 0) {
+    lines.push(chalk.hex('#FFA500')(`${summary.bestEffort} images used best-effort matching (filename variants).`));
+    lines.push('');
+  }
+
   return lines.join('\n');
 }
+
+/** Amber/orange color for best-effort matches */
+const amber = chalk.hex('#FFA500');
 
 /**
  * Render a single scrape result for logging
@@ -60,6 +80,11 @@ export function renderScrapeResult(result: ScrapeResult, index: number, total: n
 
   switch (result.status) {
     case 'downloaded':
+      if (result.bestEffort === true) {
+        // Best-effort match: show in amber with indication
+        return `${prefix} ${amber('~')} ${filename} ${chalk.gray('→')} ${amber(result.gameName ?? 'Unknown')} ${chalk.gray('(best effort)')}`;
+      }
+      // Exact match: show in green
       return `${prefix} ${chalk.green('✓')} ${filename} ${chalk.gray('→')} ${chalk.cyan(result.gameName ?? 'Unknown')}`;
 
     case 'skipped':
@@ -120,6 +145,7 @@ export function calculateSummary(results: ScrapeResult[], elapsedMs: number): Sc
     skipped: results.filter((r) => r.status === 'skipped').length,
     notFound: results.filter((r) => r.status === 'not_found').length,
     failed: results.filter((r) => r.status === 'failed').length,
+    bestEffort: results.filter((r) => r.status === 'downloaded' && r.bestEffort === true).length,
     elapsedMs,
   };
 }

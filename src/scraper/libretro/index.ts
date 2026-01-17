@@ -7,3 +7,8 @@ export {
   isSystemSupported,
 } from './systems.js';
 export { sanitizeFilename, hasInvalidChars } from './sanitizer.js';
+export {
+  LibretroManifest,
+  getManifestInstance,
+  clearManifestInstance,
+} from './manifest.js';

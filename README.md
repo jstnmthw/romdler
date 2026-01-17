@@ -2,7 +2,7 @@
 
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jstnmthw/23dc7a3936b93f223a1ad4f51e3a0879/raw/romdler-coverage.json)
 
-A Node.js CLI for downloading, organizing, artwork and deduplicating ROM collections.
+Turn scattered ROM downloads into a clean, deduplicated, artwork-ready game library — automatically. A Node.js CLI for downloading, organizing, scraping artwork and deduplicating ROM collections.
 
 > **Disclaimer:** This software is intended for use only when you have explicit authorization from the owner of the server or service to access and download content. Users are solely responsible for ensuring their use complies with applicable laws and terms of service. The authors are not liable for any misuse of this software.
 
@@ -41,6 +41,7 @@ A Node.js CLI for downloading, organizing, artwork and deduplicating ROM collect
 - Download cover art from multiple sources with fallback support
 - Libretro Thumbnails: fast, no authentication required
 - ScreenScraper.fr: CRC32 hash-based matching for accuracy
+- **Best-effort matching**: fuzzy lookup for Proto, Beta, Unlicensed variants
 - Multiple media types: box art, screenshots, title screens, wheels
 - Region priority support (US, World, EU, JP)
 - Rate limiting to respect API limits
@@ -349,7 +350,7 @@ Create an `app.config.json` file in the project root:
 
 ### Scraper Configuration
 
-The artwork downloader supports multiple sources with fallback. Libretro is enabled by default (no auth required). ScreenScraper can be enabled for better accuracy when Libretro doesn't find a match.
+The scraper supports multiple sources with fallback. Libretro is enabled by default (no auth required). ScreenScraper can be enabled for better accuracy when Libretro doesn't find a match.
 
 For detailed configuration documentation, see [src/scraper/README.md](src/scraper/README.md).
 

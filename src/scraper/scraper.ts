@@ -179,6 +179,14 @@ export async function runScraper(
   const sourceNames = initializedSources.map((s) => s.id).join(', ');
   console.log(chalk.white.bold(`Sources: ${chalk.cyan(sourceNames)}`));
 
+  // Prefetch manifests for adapters that support it (fail fast on errors)
+  for (const source of initializedSources) {
+    const adapter = adapterRegistry.get(source.id, source.options);
+    if (adapter?.prefetch !== undefined) {
+      await adapter.prefetch(systemId);
+    }
+  }
+
   // Get ROM extensions for this system
   const extensions = getExtensionsForSystem(systemId);
 
@@ -352,6 +360,7 @@ async function processRom(
       gameName: result.gameName,
       source: adapterId,
       imagePath: downloadResult.path,
+      bestEffort: result.bestEffort,
     };
   } catch (err) {
     const error = err as Error;

@@ -1,4 +1,4 @@
-# Artwork Downloader
+# Scraper
 
 Downloads cover art for your files using multiple sources with fallback support.
 
@@ -22,7 +22,7 @@ pnpm start -- scrape
 
 ## Sources
 
-The artwork downloader uses an adapter pattern with multiple sources. Sources are tried in priority order until artwork is found.
+The scraper uses an adapter pattern with multiple sources. Sources are tried in priority order until artwork is found.
 
 ### Libretro Thumbnails (Default)
 
@@ -41,6 +41,90 @@ Libretro is enabled by default with priority 1. No configuration needed.
 - Best for obscure titles that Libretro doesn't have
 
 ScreenScraper is disabled by default. Enable it for fallback when Libretro doesn't find a match.
+
+## Best-Effort Matching
+
+When an exact filename match fails, the Libretro adapter uses a **manifest-based approach** for fast, intelligent matching.
+
+### How It Works
+
+1. **Manifest fetch** - Fetches file listing from GitHub API once per system (cached)
+2. **Exact match** - Direct lookup in manifest
+3. **Variant-stripped match** - Strips `(Proto)`, `(Beta)`, etc. but keeps region tags
+4. **Title-only match** - Extracts base title and finds best match by region priority
+
+This approach is **much faster** than per-file HTTP requests because all matching happens locally against the cached manifest.
+
+### Matching Priority
+
+| Priority | Match Type | Example |
+|----------|-----------|---------|
+| 1 | Exact match | `Game (USA)` → `Game (USA)` |
+| 2 | Variant-stripped (keep region) | `Game (USA) (Proto)` → `Game (USA)` |
+| 3 | Title-only (best region match) | `Game (USA)` → `Game (World)` |
+
+### Variant Patterns Stripped
+
+| Category | Examples |
+|----------|----------|
+| Development | `(Proto)`, `(Proto 1)`, `(Beta)`, `(Demo)`, `(Sample)` |
+| Platform variants | `(e-Reader)`, `(Virtual Console)`, `(Switch Online)`, `(Wii)` |
+| Revisions | `(Rev 1)`, `(Rev A)`, `(v1.1)` |
+| Unlicensed | `(Unl)`, `(Pirate)` |
+| Publishers | `(Retro-Bit)`, `(Piko Interactive)`, `(Hudson)` |
+| Special | `(Kiosk)`, `(Program)`, date suffixes like `(1992-10-06)` |
+| BIOS | `[BIOS]` prefix |
+
+### Region Priority
+
+When multiple candidates match by title, the best region is selected:
+
+1. `(World)` - Preferred, covers all regions
+2. `(USA)` - US release
+3. `(Japan, USA)` - Joint release
+4. `(USA, Europe)` - Western release
+5. `(Europe)` - EU release
+6. `(Japan)` - Japanese release
+
+### Console Output
+
+Best-effort matches are displayed in **amber/orange** to distinguish them from exact matches:
+
+```
+[1/100] ✓ Game (USA).zip → Game (USA)                         # Exact (green)
+[2/100] ~ Game (USA) (Proto).zip → Game (USA) (best effort)   # Best-effort (amber)
+[3/100] ? Unknown Game.zip (not in database)                  # Not found (blue)
+```
+
+### Summary Breakdown
+
+The scrape summary shows a breakdown of exact vs best-effort matches:
+
+```
+──────────────────────────────────────────────────
+Scrape Summary
+──────────────────────────────────────────────────
+  Total ROMs:      100
+  Downloaded:      85
+    Exact:         75
+    Best effort:   10
+  Skipped:         10
+  Not found:       5
+  Failed:          0
+──────────────────────────────────────────────────
+
+10 images used best-effort matching (filename variants).
+```
+
+### Examples
+
+| ROM Filename | Best-Effort Match | Match Type |
+|-------------|-------------------|------------|
+| `Aladdin (USA) (Proto).zip` | `Aladdin (USA)` | Variant-stripped |
+| `Donkey Kong (USA) (e-Reader).zip` | `Donkey Kong (World)` | Title-only |
+| `Ice Climber (USA).zip` | `Ice Climber (World)` | Title-only |
+| `Caveman Ninja (USA) (Beta).zip` | `Caveman Ninja (USA)` | Variant-stripped |
+| `[BIOS] Demo Vision (USA).zip` | `Demo Vision (USA)` | Variant-stripped |
 
 ## Configuration
 
@@ -229,6 +313,7 @@ src/scraper/
 │   └── index.ts
 ├── libretro/           # Libretro Thumbnails adapter
 │   ├── adapter.ts      # Implementation
+│   ├── manifest.ts     # Manifest fetching and matching
 │   ├── systems.ts      # System ID to folder name mapping
 │   └── sanitizer.ts    # Filename sanitization
 ├── screenscraper/      # ScreenScraper adapter

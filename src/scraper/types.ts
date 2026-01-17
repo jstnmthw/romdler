@@ -26,6 +26,8 @@ export interface ScrapeResult {
   source?: string;
   /** Error message (if failed) */
   error?: string;
+  /** True if this was a fuzzy/best-effort match (not exact filename) */
+  bestEffort?: boolean;
 }
 
 /** Summary statistics for a scrape operation */
@@ -35,6 +37,8 @@ export interface ScrapeSummary {
   skipped: number;
   notFound: number;
   failed: number;
+  /** Number of best-effort/fuzzy matches (subset of downloaded) */
+  bestEffort: number;
   /** Total time in milliseconds */
   elapsedMs: number;
 }
