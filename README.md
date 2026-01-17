@@ -201,84 +201,53 @@ Create an `app.config.json` file in the project root:
 
 ### Artwork Configuration
 
-The artwork downloader supports multiple sources with a fallback chain. Sources are tried in priority order until artwork is found.
+The artwork downloader supports multiple sources with fallback. Libretro is enabled by default (no auth required). ScreenScraper can be enabled for better accuracy when Libretro doesn't find a match.
 
-#### Available Sources
+For detailed configuration documentation, see [src/scraper/README.md](src/scraper/README.md).
 
-| Source | Auth Required | Lookup Method | Best For |
-|--------|--------------|---------------|----------|
-| `libretro` | No | Filename | Quick setup, no credentials needed |
-| `screenscraper` | Yes | CRC32 hash | Maximum accuracy, requires API credentials |
-
-#### Basic Configuration (No Auth Required)
-
-Use Libretro Thumbnails for credential-free scraping:
+#### Minimal Configuration (Libretro Only)
 
 ```json
 {
-  "urls": ["..."],
-  "downloadDir": "./downloads/roms/snes",
   "scraper": {
     "enabled": true,
-    "sources": [
-      { "id": "libretro", "enabled": true, "priority": 1 }
-    ],
-    "systemId": 4,
-    "mediaType": "box-2D"
+    "systemId": 4
   }
 }
 ```
 
-#### Full Configuration (With Fallback)
-
-Use Libretro first, fall back to ScreenScraper for unmatched ROMs:
+#### With ScreenScraper Fallback
 
 ```json
 {
-  "urls": ["..."],
-  "downloadDir": "./downloads/roms/snes",
   "scraper": {
     "enabled": true,
-    "sources": [
-      { "id": "libretro", "enabled": true, "priority": 1 },
-      { "id": "screenscraper", "enabled": true, "priority": 2 }
-    ],
-    "credentials": {
-      "devId": "YOUR_DEV_ID",
-      "devPassword": "YOUR_DEV_PASSWORD",
-      "userId": "YOUR_SCREENSCRAPER_USERNAME",
-      "userPassword": "YOUR_SCREENSCRAPER_PASSWORD"
-    },
     "systemId": 4,
-    "mediaType": "box-2D",
-    "regionPriority": ["us", "wor", "eu", "jp"],
-    "skipExisting": true,
-    "rateLimitMs": 1000
+    "screenscraper": {
+      "enabled": true,
+      "credentials": {
+        "devId": "YOUR_DEV_ID",
+        "devPassword": "YOUR_DEV_PASSWORD",
+        "userId": "YOUR_USERNAME",
+        "userPassword": "YOUR_PASSWORD"
+      }
+    }
   }
 }
 ```
 
-#### Artwork Options
+#### Common Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `false` | Enable artwork downloading |
-| `sources` | `array` | - | Artwork sources with priority (lower = tried first) |
-| `credentials` | `object` | - | ScreenScraper API credentials (required if using screenscraper) |
 | `systemId` | `number` | (required) | System ID for platform identification |
 | `mediaType` | `string` | `"box-2D"` | Media type to download |
 | `regionPriority` | `string[]` | `["us","wor","eu","jp"]` | Region preference order |
-| `resize` | `object` | - | Image resize options (see below) |
 | `skipExisting` | `boolean` | `true` | Skip files that already have images |
-| `rateLimitMs` | `number` | `1000` | Delay between API requests (ms) |
-
-#### Resize Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable image resizing |
-| `maxWidth` | `number` | `300` | Maximum width in pixels (100-1000) |
-| `maxHeight` | `number` | `300` | Maximum height in pixels (100-1000) |
+| `resize` | `object` | - | Image resize options |
+| `libretro` | `object` | - | Libretro adapter config |
+| `screenscraper` | `object` | - | ScreenScraper adapter config |
 
 #### System IDs
 
@@ -291,34 +260,7 @@ Use Libretro first, fall back to ScreenScraper for unmatched ROMs:
 | PlayStation | 57 | Dreamcast | 23 |
 | Neo Geo | 142 | MAME | 75 |
 
-See `src/scraper/screenscraper/systems.ts` for the full list.
-
-#### Media Types
-
-| Type | Description |
-|------|-------------|
-| `box-2D` | 2D box art (front cover) |
-| `box-3D` | 3D box art render |
-| `ss` | In-game screenshot |
-| `sstitle` | Title screen |
-| `wheel` | Logo/wheel art |
-| `mixrbv1` | Mix image v1 (composite) |
-| `mixrbv2` | Mix image v2 (composite) |
-
-#### Libretro Thumbnails Notes
-
-- No authentication required
-- ROM filenames should follow No-Intro naming conventions for best matching
-- Covers 130+ systems with good coverage of popular titles
-- See [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) for more info
-
-#### Getting ScreenScraper Credentials
-
-Only required if using the `screenscraper` source:
-
-1. Register a free account at [screenscraper.fr](https://www.screenscraper.fr/)
-2. Request developer credentials via the ScreenScraper forums
-3. Add credentials to your config file
+See [src/scraper/README.md](src/scraper/README.md) for the full list and detailed adapter configuration
 
 ### Filtering
 

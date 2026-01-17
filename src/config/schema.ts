@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** ScreenScraper credentials schema */
-const scraperCredentialsSchema = z.object({
+const screenscraperCredentialsSchema = z.object({
   devId: z.string().min(1, 'Developer ID is required'),
   devPassword: z.string().min(1, 'Developer password is required'),
   userId: z.string().min(1, 'User ID is required'),
@@ -15,27 +15,39 @@ const resizeSchema = z.object({
   maxHeight: z.number().int().min(100).max(1000).default(300),
 });
 
-/** Adapter source configuration schema */
-const adapterSourceSchema = z.object({
-  id: z.enum(['libretro', 'screenscraper']),
+/** Libretro adapter configuration */
+const libretroConfigSchema = z.object({
   enabled: z.boolean().default(true),
   priority: z.number().int().min(1).max(100).default(1),
 });
 
-/** Scraper configuration schema */
-const scraperSchema = z.object({
+/** ScreenScraper adapter configuration */
+const screenscraperConfigSchema = z.object({
   enabled: z.boolean().default(false),
-  /** @deprecated Use sources array instead */
-  source: z.enum(['screenscraper', 'libretro']).optional(),
-  /** Adapter sources with priority (lower priority = tried first) */
-  sources: z.array(adapterSourceSchema).optional(),
-  credentials: scraperCredentialsSchema.optional(),
-  systemId: z.number().int().min(1).optional(),
-  mediaType: z.string().default('box-2D'),
-  regionPriority: z.array(z.string()).default(['us', 'wor', 'eu', 'jp']),
-  resize: resizeSchema.default({ enabled: false, maxWidth: 300, maxHeight: 300 }),
-  skipExisting: z.boolean().default(true),
+  priority: z.number().int().min(1).max(100).default(2),
+  credentials: screenscraperCredentialsSchema.optional(),
   rateLimitMs: z.number().int().min(100).max(10000).default(1000),
+});
+
+/** Artwork scraper configuration schema */
+const scraperSchema = z.object({
+  /** Enable artwork downloading */
+  enabled: z.boolean().default(false),
+  /** System ID for platform identification */
+  systemId: z.number().int().min(1).optional(),
+  /** Media type to download (box-2D, ss, sstitle, etc.) */
+  mediaType: z.string().default('box-2D'),
+  /** Region preference order */
+  regionPriority: z.array(z.string()).default(['us', 'wor', 'eu', 'jp']),
+  /** Image resize options */
+  resize: resizeSchema.default({ enabled: false, maxWidth: 300, maxHeight: 300 }),
+  /** Skip files that already have images */
+  skipExisting: z.boolean().default(true),
+
+  /** Libretro Thumbnails adapter config (default, no auth required) */
+  libretro: libretroConfigSchema.default({ enabled: true, priority: 1 }),
+  /** ScreenScraper adapter config (requires credentials) */
+  screenscraper: screenscraperConfigSchema.default({ enabled: false, priority: 2, rateLimitMs: 1000 }),
 });
 
 export const configSchema = z.object({
@@ -53,6 +65,8 @@ export const configSchema = z.object({
 });
 
 export type Config = z.infer<typeof configSchema>;
-export type ScraperCredentials = z.infer<typeof scraperCredentialsSchema>;
 export type ScraperConfigSchema = z.infer<typeof scraperSchema>;
-export type AdapterSourceConfigSchema = z.infer<typeof adapterSourceSchema>;
+export type LibretroConfigSchema = z.infer<typeof libretroConfigSchema>;
+export type ScreenScraperConfigSchema = z.infer<typeof screenscraperConfigSchema>;
+export type ScreenScraperCredentials = z.infer<typeof screenscraperCredentialsSchema>;
+export type ResizeConfigSchema = z.infer<typeof resizeSchema>;

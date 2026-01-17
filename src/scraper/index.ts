@@ -9,7 +9,9 @@ export type {
   ScreenScraperCredentials,
   ScraperConfig,
   ScrapeOptions,
-  SourceConfig,
+  LibretroConfig,
+  ScreenScraperConfig,
+  ResizeConfig,
   MediaType,
   RegionCode,
 } from './types.js';

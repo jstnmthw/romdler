@@ -13,16 +13,6 @@
   "logLevel": "info",
   "scraper": {
     "enabled": true,
-    "sources": [
-      { "id": "libretro", "enabled": true, "priority": 1 },
-      { "id": "screenscraper", "enabled": true, "priority": 2 }
-    ],
-    "credentials": {
-      "devId": "YOUR_DEV_ID",
-      "devPassword": "YOUR_DEV_PASSWORD",
-      "userId": "YOUR_SCREENSCRAPER_USERNAME",
-      "userPassword": "YOUR_SCREENSCRAPER_PASSWORD"
-    },
     "systemId": 10,
     "mediaType": "box-2D",
     "regionPriority": ["us", "wor", "eu", "jp"],
@@ -32,6 +22,20 @@
       "maxHeight": 300
     },
     "skipExisting": true,
-    "rateLimitMs": 1000
+    "libretro": {
+      "enabled": true,
+      "priority": 1
+    },
+    "screenscraper": {
+      "enabled": false,
+      "priority": 2,
+      "credentials": {
+        "devId": "YOUR_DEV_ID",
+        "devPassword": "YOUR_DEV_PASSWORD",
+        "userId": "YOUR_SCREENSCRAPER_USERNAME",
+        "userPassword": "YOUR_SCREENSCRAPER_PASSWORD"
+      },
+      "rateLimitMs": 1000
+    }
   }
 }

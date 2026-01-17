@@ -47,41 +47,44 @@ export interface ScreenScraperCredentials {
   userPassword: string;
 }
 
-/** Source adapter configuration */
-export interface SourceConfig {
-  /** Adapter identifier (e.g., 'libretro', 'screenscraper') */
-  id: 'libretro' | 'screenscraper';
-  /** Whether this source is enabled */
+/** Libretro adapter configuration */
+export interface LibretroConfig {
   enabled: boolean;
-  /** Priority (lower = tried first) */
   priority: number;
 }
 
-/** Configuration for the scraper */
+/** ScreenScraper adapter configuration */
+export interface ScreenScraperConfig {
+  enabled: boolean;
+  priority: number;
+  credentials?: ScreenScraperCredentials;
+  rateLimitMs: number;
+}
+
+/** Image resize options */
+export interface ResizeConfig {
+  enabled: boolean;
+  maxWidth: number;
+  maxHeight: number;
+}
+
+/** Configuration for the artwork scraper */
 export interface ScraperConfig {
   enabled: boolean;
-  /** @deprecated Use sources array instead */
-  source?: 'screenscraper' | 'libretro';
-  /** Adapter sources with priority ordering */
-  sources?: SourceConfig[];
-  /** ScreenScraper credentials (required if screenscraper source is enabled) */
-  credentials?: ScreenScraperCredentials;
-  /** System ID for ROM identification */
+  /** System ID for platform identification */
   systemId: number;
   /** Media type to download (box-2D, ss, sstitle, etc.) */
   mediaType: string;
   /** Region priority for media selection */
   regionPriority: string[];
   /** Image resize options */
-  resize: {
-    enabled: boolean;
-    maxWidth: number;
-    maxHeight: number;
-  };
-  /** Skip ROMs that already have images */
+  resize: ResizeConfig;
+  /** Skip files that already have images */
   skipExisting: boolean;
-  /** Delay between API requests in milliseconds */
-  rateLimitMs: number;
+  /** Libretro adapter config */
+  libretro: LibretroConfig;
+  /** ScreenScraper adapter config */
+  screenscraper: ScreenScraperConfig;
 }
 
 /** Options passed to the scrape command */
@@ -100,7 +103,7 @@ export interface ScrapeOptions {
   source?: string;
 }
 
-/** Media types available from ScreenScraper */
+/** Media types available */
 export type MediaType =
   | 'ss'        // Screenshot (in-game)
   | 'sstitle'   // Title screen
@@ -113,5 +116,5 @@ export type MediaType =
   | 'fanart'    // Fan artwork
   | 'video';    // Video preview
 
-/** Region codes for ScreenScraper */
+/** Region codes */
 export type RegionCode = 'wor' | 'us' | 'eu' | 'jp' | 'kr' | 'asi';

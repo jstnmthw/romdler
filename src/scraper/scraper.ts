@@ -30,16 +30,17 @@ adapterRegistry.register('libretro', createLibretroAdapter);
 adapterRegistry.register('screenscraper', createScreenScraperAdapter);
 
 /**
- * Convert scraper config to adapter source configs.
- * Handles both legacy single-source and new multi-source formats.
+ * Build adapter source configs from the new config schema.
+ * Each adapter has its own config section with enabled/priority.
  */
 function getSourceConfigs(
   config: Config,
   options: ScrapeOptions
 ): AdapterSourceConfig[] {
   const scraperConfig = config.scraper;
+  const sources: AdapterSourceConfig[] = [];
 
-  // CLI source override
+  // CLI source override - use only the specified source
   if (options.source !== undefined && options.source !== '') {
     return [
       {
@@ -51,53 +52,32 @@ function getSourceConfigs(
     ];
   }
 
-  // New sources array format
-  if (scraperConfig?.sources !== undefined && scraperConfig.sources.length > 0) {
-    return scraperConfig.sources
-      .filter((s) => s.enabled)
-      .sort((a, b) => a.priority - b.priority)
-      .map((s) => ({
-        id: s.id,
-        enabled: s.enabled,
-        priority: s.priority,
-        options: buildAdapterOptions(s.id, config),
-      }));
+  // Build from adapter-specific configs
+  const libretroConfig = scraperConfig?.libretro;
+  const screenscraperConfig = scraperConfig?.screenscraper;
+
+  // Add Libretro if enabled (default: true)
+  if (libretroConfig?.enabled !== false) {
+    sources.push({
+      id: 'libretro',
+      enabled: true,
+      priority: libretroConfig?.priority ?? 1,
+      options: buildAdapterOptions('libretro', config),
+    });
   }
 
-  // Legacy single source format
-  if (scraperConfig?.source !== undefined) {
-    return [
-      {
-        id: scraperConfig.source,
-        enabled: true,
-        priority: 1,
-        options: buildAdapterOptions(scraperConfig.source, config),
-      },
-    ];
-  }
-
-  // Default: try libretro first, then screenscraper if credentials available
-  const sources: AdapterSourceConfig[] = [];
-
-  // Always add libretro first (no auth needed)
-  sources.push({
-    id: 'libretro',
-    enabled: true,
-    priority: 1,
-    options: buildAdapterOptions('libretro', config),
-  });
-
-  // Add screenscraper if credentials are available
-  if (scraperConfig?.credentials !== undefined) {
+  // Add ScreenScraper only if enabled AND credentials are configured
+  if (screenscraperConfig?.enabled === true && screenscraperConfig.credentials !== undefined) {
     sources.push({
       id: 'screenscraper',
       enabled: true,
-      priority: 2,
+      priority: screenscraperConfig.priority ?? 2,
       options: buildAdapterOptions('screenscraper', config),
     });
   }
 
-  return sources;
+  // Sort by priority
+  return sources.sort((a, b) => a.priority - b.priority);
 }
 
 /**
@@ -110,9 +90,10 @@ function buildAdapterOptions(
   const scraperConfig = config.scraper;
 
   if (adapterId === 'screenscraper') {
+    const ssConfig = scraperConfig?.screenscraper;
     return {
-      credentials: scraperConfig?.credentials,
-      rateLimitMs: scraperConfig?.rateLimitMs ?? 1000,
+      credentials: ssConfig?.credentials,
+      rateLimitMs: ssConfig?.rateLimitMs ?? 1000,
       userAgent: config.userAgent,
     };
   }
@@ -175,7 +156,7 @@ export async function runScraper(
 
   if (sourceConfigs.length === 0) {
     throw new Error(
-      'No artwork sources configured. Add scraper.sources or scraper.source to your config file.'
+      'No artwork sources enabled. Enable scraper.libretro or configure scraper.screenscraper with credentials.'
     );
   }
 
@@ -187,7 +168,7 @@ export async function runScraper(
 
   if (initializedSources.length === 0) {
     throw new Error(
-      'No artwork sources could be initialized. Check your configuration and credentials.'
+      'No artwork sources could be initialized. Check your configuration.'
     );
   }
 
