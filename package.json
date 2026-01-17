@@ -22,7 +22,9 @@
     "downloader",
     "zip",
     "archive",
-    "scraper"
+    "scraper",
+    "coverart",
+    "boxart"
   ],
   "license": "MIT",
   "dependencies": {

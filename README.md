@@ -1,6 +1,6 @@
-# ROM Downloader
+# Romdler
 
-A slim, optimized Node.js micro app for downloading ZIP files from archival website HTML table directories, with integrated artwork scraping from ScreenScraper.
+A Node.js CLI for downloading ZIP archives from directory listings and fetching box art for use with gaming frontends.
 
 ## Features
 
@@ -15,7 +15,7 @@ A slim, optimized Node.js micro app for downloading ZIP files from archival webs
 - Dry-run mode to preview downloads
 - Skip existing files (with optional size verification)
 
-### Scraper Features (NEW)
+### Scraper Features
 - Automatically download cover art for ROMs from ScreenScraper.fr
 - CRC32 hash-based ROM identification for accurate matching
 - Multiple media types: box art, screenshots, title screens, wheels
@@ -182,7 +182,18 @@ Create an `app.config.json` file in the project root:
 
 ### Scraper Configuration
 
-To use the scraper, add a `scraper` section to your config:
+The scraper supports multiple artwork sources with a fallback chain. Sources are tried in priority order until artwork is found.
+
+#### Available Sources
+
+| Source | Auth Required | Lookup Method | Best For |
+|--------|--------------|---------------|----------|
+| `libretro` | No | Filename | Quick setup, no credentials needed |
+| `screenscraper` | Yes | CRC32 hash | Maximum accuracy, requires API credentials |
+
+#### Basic Configuration (No Auth Required)
+
+Use Libretro Thumbnails for credential-free scraping:
 
 ```json
 {
@@ -190,7 +201,29 @@ To use the scraper, add a `scraper` section to your config:
   "downloadDir": "./downloads/roms/snes",
   "scraper": {
     "enabled": true,
-    "source": "screenscraper",
+    "sources": [
+      { "id": "libretro", "enabled": true, "priority": 1 }
+    ],
+    "systemId": 4,
+    "mediaType": "box-2D"
+  }
+}
+```
+
+#### Full Configuration (With Fallback)
+
+Use Libretro first, fall back to ScreenScraper for unmatched ROMs:
+
+```json
+{
+  "urls": ["..."],
+  "downloadDir": "./downloads/roms/snes",
+  "scraper": {
+    "enabled": true,
+    "sources": [
+      { "id": "libretro", "enabled": true, "priority": 1 },
+      { "id": "screenscraper", "enabled": true, "priority": 2 }
+    ],
     "credentials": {
       "devId": "YOUR_DEV_ID",
       "devPassword": "YOUR_DEV_PASSWORD",
@@ -211,9 +244,9 @@ To use the scraper, add a `scraper` section to your config:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `false` | Enable scraper functionality |
-| `source` | `string` | `"screenscraper"` | Data source (only screenscraper supported) |
-| `credentials` | `object` | (required) | ScreenScraper API credentials |
-| `systemId` | `number` | (required) | ScreenScraper system ID (see table below) |
+| `sources` | `array` | - | Artwork sources with priority (lower = tried first) |
+| `credentials` | `object` | - | ScreenScraper API credentials (required if using screenscraper) |
+| `systemId` | `number` | (required) | System ID for platform identification |
 | `mediaType` | `string` | `"box-2D"` | Media type to download |
 | `regionPriority` | `string[]` | `["us","wor","eu","jp"]` | Region preference order |
 | `skipExisting` | `boolean` | `true` | Skip ROMs that already have images |
@@ -244,7 +277,16 @@ See `src/scraper/screenscraper/systems.ts` for the full list.
 | `mixrbv1` | Mix image v1 (composite) |
 | `mixrbv2` | Mix image v2 (composite) |
 
+#### Libretro Thumbnails Notes
+
+- No authentication required
+- ROM filenames should follow No-Intro naming conventions for best matching
+- Covers 130+ systems with good coverage of popular titles
+- See [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) for more info
+
 #### Getting ScreenScraper Credentials
+
+Only required if using the `screenscraper` source:
 
 1. Register a free account at [screenscraper.fr](https://www.screenscraper.fr/)
 2. Request developer credentials via the ScreenScraper forums
@@ -285,7 +327,7 @@ The app provides modern, colored console output:
 
 ```
 ╔════════════════════════════════════════════════════════╗
-║  ROM Downloader v1.0.0                                 ║
+║  Romdler v1.0.0                                 ║
 ║  Archive ZIP file bulk downloader                      ║
 ╚════════════════════════════════════════════════════════╝
 
@@ -330,7 +372,7 @@ pnpm build      # Build TypeScript to dist/
 ### Project Structure
 
 ```
-rom-downloader/
+romdler/
 ├── src/
 │   ├── cli/          # CLI argument parsing
 │   ├── config/       # Configuration loading and validation
@@ -338,22 +380,22 @@ rom-downloader/
 │   ├── parser/       # HTML parsing with Cheerio
 │   ├── filter/       # Whitelist/blacklist filtering
 │   ├── downloader/   # Streaming download logic
-│   ├── scraper/      # ROM artwork scraper
-│   │   ├── screenscraper/  # ScreenScraper API client
-│   │   ├── hasher.ts       # CRC32 hash calculation
-│   │   ├── scanner.ts      # ROM directory scanner
-│   │   ├── downloader.ts   # Image downloader
-│   │   └── reporter.ts     # Scrape results reporter
+│   ├── scraper/      # Artwork scraper
+│   │   ├── adapters/      # Adapter interface & registry
+│   │   ├── libretro/      # Libretro Thumbnails adapter
+│   │   ├── screenscraper/ # ScreenScraper API adapter
+│   │   ├── hasher.ts      # CRC32 hash calculation
+│   │   ├── scanner.ts     # Directory scanner
+│   │   ├── downloader.ts  # Image downloader
+│   │   └── reporter.ts    # Scrape results reporter
 │   ├── ui/           # Console rendering
 │   ├── utils/        # URL resolution, filename sanitization
 │   ├── types/        # Shared TypeScript types
 │   └── index.ts      # Main entry point
 ├── tests/            # Unit tests
 ├── docs/             # Documentation
-│   └── ROM_IMAGE_PAIRING_FEATURE.md  # Scraper design doc
 ├── app.config.json   # Configuration file
-├── app.config.example.json  # Example config with scraper
-├── ARCHITECTURE.md   # Design documentation
+├── app.config.example.json  # Example config
 └── README.md         # This file
 ```
 

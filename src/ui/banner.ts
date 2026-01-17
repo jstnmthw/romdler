@@ -11,8 +11,8 @@ ${chalk.cyan.bold('╚═══════════════════�
 `;
 }
 
-const DOWNLOAD_BANNER = createBanner('Archive ZIP file bulk downloader');
-const SCRAPER_BANNER = createBanner('ROM cover art scraper');
+const DOWNLOAD_BANNER = createBanner('Archive directory downloader');
+const SCRAPER_BANNER = createBanner('Artwork scraper');
 
 export function printBanner(): void {
   console.log(DOWNLOAD_BANNER);

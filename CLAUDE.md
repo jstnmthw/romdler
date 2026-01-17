@@ -5,8 +5,10 @@ You are a senior software engineer specializing in advanced TypeScript developme
 ## Project Context
 
 ### What This Project Does
-1. **ROM Downloader**: Downloads ZIP files from HTML table directory listings (archive sites)
-2. **Artwork Scraper**: Downloads cover art for ROMs from ScreenScraper.fr API using CRC32 hash identification
+1. **Downloader**: Downloads ZIP files from HTML table directory listings (archive sites)
+2. **Artwork Scraper**: Downloads cover art using an adapter pattern with multiple sources:
+   - **Libretro Thumbnails**: Filename-based lookup, no auth required (default)
+   - **ScreenScraper.fr**: CRC32 hash-based lookup, requires API credentials
 
 ### Tech Stack
 - **Runtime**: Node.js 20+
@@ -166,7 +168,9 @@ src/
 ├── filter/        # Whitelist/blacklist logic
 ├── downloader/    # File download with streaming
 ├── scraper/       # ROM artwork scraper
-│   └── screenscraper/  # ScreenScraper API client
+│   ├── adapters/       # Adapter interface & registry
+│   ├── libretro/       # Libretro Thumbnails adapter
+│   └── screenscraper/  # ScreenScraper API adapter
 ├── ui/            # Console output, progress bars
 ├── utils/         # URL, filename, fs utilities
 ├── types/         # Shared type definitions
@@ -180,6 +184,7 @@ src/
 3. **Rate Limiting**: Configurable delays between API requests
 4. **Retry with Backoff**: Exponential backoff for transient failures
 5. **Early Returns**: Flatten nested conditionals with guard clauses
+6. **Adapter Pattern**: Artwork sources implement `ArtworkAdapter` interface for swappable backends with fallback chains
 
 ---
 
@@ -255,6 +260,16 @@ describe('calculateCRC32', () => {
 2. Export new types from `src/config/index.ts`
 3. Use in relevant modules
 4. Update README.md and app.config.example.json
+
+### Adding a New Artwork Adapter
+
+1. Create directory: `src/scraper/newsource/`
+2. Create adapter: `src/scraper/newsource/adapter.ts` implementing `ArtworkAdapter`
+3. Create system mappings if needed: `src/scraper/newsource/systems.ts`
+4. Create barrel export: `src/scraper/newsource/index.ts`
+5. Register in `src/scraper/adapters/registry.ts`
+6. Add to config schema enum in `src/config/schema.ts`
+7. See `docs/ARTWORK_ADAPTER_PATTERN.md` for detailed design docs
 
 ---
 
