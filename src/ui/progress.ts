@@ -75,15 +75,18 @@ export class ProgressBar {
   private totalBytesStr: string = '';
 
   constructor() {
-    this.bar = new cliProgress.SingleBar({
-      format: `${chalk.cyan('{filename}')} |${chalk.green('{bar}')}| {percentage}% | {size} | {speed} | {fileProgress}`,
-      barCompleteChar: '\u2588',
-      barIncompleteChar: '\u2591',
-      hideCursor: true,
-      clearOnComplete: true,
-      stopOnComplete: false,
-      forceRedraw: true,
-    }, cliProgress.Presets.shades_classic);
+    this.bar = new cliProgress.SingleBar(
+      {
+        format: `${chalk.cyan('{filename}')} |${chalk.green('{bar}')}| {percentage}% | {size} | {speed} | {fileProgress}`,
+        barCompleteChar: '\u2588',
+        barIncompleteChar: '\u2591',
+        hideCursor: true,
+        clearOnComplete: true,
+        stopOnComplete: false,
+        forceRedraw: true,
+      },
+      cliProgress.Presets.shades_classic
+    );
   }
 
   /**

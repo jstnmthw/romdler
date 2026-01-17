@@ -1,10 +1,6 @@
 import path from 'path';
 import type { Config } from '../config/schema.js';
-import type {
-  RomFile,
-  ScrapeResult,
-  ScrapeOptions,
-} from './types.js';
+import type { RomFile, ScrapeResult, ScrapeOptions } from './types.js';
 import { scanForRoms, getImgsDirectory, findExistingImage } from './scanner.js';
 import { calculateCRC32 } from './hasher.js';
 import { getExtensionsForSystem } from './screenscraper/systems.js';
@@ -36,10 +32,7 @@ adapterRegistry.register('screenscraper', createScreenScraperAdapter);
  * and nullish coalescing for defaults. Logic is a simple linear if-else flow.
  */
 // eslint-disable-next-line complexity
-function getSourceConfigs(
-  config: Config,
-  options: ScrapeOptions
-): AdapterSourceConfig[] {
+function getSourceConfigs(config: Config, options: ScrapeOptions): AdapterSourceConfig[] {
   const scraperConfig = config.scraper;
   const sources: AdapterSourceConfig[] = [];
 
@@ -86,10 +79,7 @@ function getSourceConfigs(
 /**
  * Build adapter-specific options from config
  */
-function buildAdapterOptions(
-  adapterId: string,
-  config: Config
-): Record<string, unknown> {
+function buildAdapterOptions(adapterId: string, config: Config): Record<string, unknown> {
   const scraperConfig = config.scraper;
 
   if (adapterId === 'screenscraper') {
@@ -128,10 +118,7 @@ function needsHashCalculation(sourceConfigs: AdapterSourceConfig[]): boolean {
  * abstractions without improving readability. Adapter pattern adds necessary extensibility.
  */
 // eslint-disable-next-line complexity
-export async function runScraper(
-  config: Config,
-  options: ScrapeOptions
-): Promise<ScrapeResult[]> {
+export async function runScraper(config: Config, options: ScrapeOptions): Promise<ScrapeResult[]> {
   // Print banner
   if (options.dryRun) {
     printScraperDryRunBanner();
@@ -144,9 +131,7 @@ export async function runScraper(
 
   // Validate system ID
   if (config.scraper?.systemId === undefined || config.scraper.systemId === null) {
-    throw new Error(
-      'System ID not configured. Add scraper.systemId to your config file.'
-    );
+    throw new Error('System ID not configured. Add scraper.systemId to your config file.');
   }
 
   const systemId = config.scraper.systemId;
@@ -165,14 +150,10 @@ export async function runScraper(
 
   // Initialize adapters
   const initResults = await adapterRegistry.initializeAll(sourceConfigs);
-  const initializedSources = sourceConfigs.filter(
-    (s) => initResults.get(s.id) === true
-  );
+  const initializedSources = sourceConfigs.filter((s) => initResults.get(s.id) === true);
 
   if (initializedSources.length === 0) {
-    throw new Error(
-      'No artwork sources could be initialized. Check your configuration.'
-    );
+    throw new Error('No artwork sources could be initialized. Check your configuration.');
   }
 
   // Log active sources
@@ -226,9 +207,7 @@ export async function runScraper(
     }
 
     // Filter out ROMs that already have images
-    romsToProcess = romsToProcess.filter(
-      (rom) => !results.some((r) => r.rom.path === rom.path)
-    );
+    romsToProcess = romsToProcess.filter((rom) => !results.some((r) => r.rom.path === rom.path));
   }
 
   // Dry-run mode: just show what would be scraped
@@ -308,10 +287,7 @@ async function processRom(
     };
 
     // Try adapters in priority order
-    const lookupResult = await adapterRegistry.lookupWithFallback(
-      lookupParams,
-      sourceConfigs
-    );
+    const lookupResult = await adapterRegistry.lookupWithFallback(lookupParams, sourceConfigs);
 
     if (lookupResult === null || !lookupResult.result.found) {
       return {

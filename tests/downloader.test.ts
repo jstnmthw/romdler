@@ -56,11 +56,7 @@ describe('downloader', () => {
         status: 200,
       });
 
-      const result = await downloadFile(
-        'https://example.com/file.zip',
-        'file.zip',
-        defaultOptions
-      );
+      const result = await downloadFile('https://example.com/file.zip', 'file.zip', defaultOptions);
 
       expect(result.status).toBe('downloaded');
       expect(result.filename).toBe('file.zip');
@@ -133,9 +129,7 @@ describe('downloader', () => {
     });
 
     it('returns failed status on download error', async () => {
-      mockFetchStream.mockRejectedValue(
-        new HttpError('http', 'HTTP 404: Not Found', false, 404)
-      );
+      mockFetchStream.mockRejectedValue(new HttpError('http', 'HTTP 404: Not Found', false, 404));
 
       const result = await downloadFile(
         'https://example.com/missing.zip',
@@ -150,11 +144,7 @@ describe('downloader', () => {
     it('handles generic errors', async () => {
       mockFetchStream.mockRejectedValue(new Error('Something went wrong'));
 
-      const result = await downloadFile(
-        'https://example.com/file.zip',
-        'file.zip',
-        defaultOptions
-      );
+      const result = await downloadFile('https://example.com/file.zip', 'file.zip', defaultOptions);
 
       expect(result.status).toBe('failed');
       expect(result.error).toBe('Something went wrong');
@@ -170,12 +160,7 @@ describe('downloader', () => {
 
       const onProgress = vi.fn();
 
-      await downloadFile(
-        'https://example.com/file.zip',
-        'file.zip',
-        defaultOptions,
-        onProgress
-      );
+      await downloadFile('https://example.com/file.zip', 'file.zip', defaultOptions, onProgress);
 
       expect(onProgress).toHaveBeenCalled();
       expect(onProgress).toHaveBeenCalledWith(
@@ -259,13 +244,11 @@ describe('downloader', () => {
         { url: 'https://example.com/success.zip', filename: 'success.zip' },
       ];
 
-      mockFetchStream
-        .mockRejectedValueOnce(new Error('Failed'))
-        .mockResolvedValueOnce({
-          body: createMockStream('content'),
-          contentLength: 7,
-          status: 200,
-        });
+      mockFetchStream.mockRejectedValueOnce(new Error('Failed')).mockResolvedValueOnce({
+        body: createMockStream('content'),
+        contentLength: 7,
+        status: 200,
+      });
 
       const results = await downloadSequential(files, defaultOptions);
 

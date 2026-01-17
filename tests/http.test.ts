@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchWithRetry, fetchHtml, fetchStream, isHttpError, HttpError } from '../src/http/index.js';
+import {
+  fetchWithRetry,
+  fetchHtml,
+  fetchStream,
+  isHttpError,
+  HttpError,
+} from '../src/http/index.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -132,16 +138,14 @@ describe('http fetcher', () => {
     });
 
     it('retries on network error', async () => {
-      mockFetch
-        .mockRejectedValueOnce(new Error('fetch failed'))
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          headers: new Headers(),
-          text: () => Promise.resolve('content'),
-          body: null,
-        });
+      mockFetch.mockRejectedValueOnce(new Error('fetch failed')).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        text: () => Promise.resolve('content'),
+        body: null,
+      });
 
       const promise = fetchWithRetry('https://example.com/', defaultOptions);
       await vi.runAllTimersAsync();
@@ -155,16 +159,14 @@ describe('http fetcher', () => {
       const abortError = new Error('Aborted');
       abortError.name = 'AbortError';
 
-      mockFetch
-        .mockRejectedValueOnce(abortError)
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          headers: new Headers(),
-          text: () => Promise.resolve('content'),
-          body: null,
-        });
+      mockFetch.mockRejectedValueOnce(abortError).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        text: () => Promise.resolve('content'),
+        body: null,
+      });
 
       const promise = fetchWithRetry('https://example.com/', defaultOptions);
       await vi.runAllTimersAsync();
@@ -298,7 +300,9 @@ describe('http fetcher', () => {
         body: null,
       });
 
-      await expect(fetchStream('https://example.com/file.zip', defaultOptions)).rejects.toMatchObject({
+      await expect(
+        fetchStream('https://example.com/file.zip', defaultOptions)
+      ).rejects.toMatchObject({
         type: 'network',
         message: 'Response body is null',
       });
@@ -313,7 +317,9 @@ describe('http fetcher', () => {
         body: new ReadableStream(),
       });
 
-      await expect(fetchStream('https://example.com/file.zip', defaultOptions)).rejects.toMatchObject({
+      await expect(
+        fetchStream('https://example.com/file.zip', defaultOptions)
+      ).rejects.toMatchObject({
         type: 'http',
         status: 403,
       });

@@ -45,7 +45,10 @@ function parsePositiveInt(value: string): number | undefined {
 }
 
 function parseCommaSeparated(value: string): string[] {
-  return value.split(',').map((s) => s.trim()).filter((s): s is string => s.length > 0);
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s): s is string => s.length > 0);
 }
 
 /**
@@ -66,7 +69,12 @@ export function parseArgs(args: string[]): CliArgs {
   let startIndex = 0;
 
   const firstArg = argsToProcess[0];
-  if (argsToProcess.length > 0 && firstArg !== undefined && firstArg !== '' && !firstArg.startsWith('-')) {
+  if (
+    argsToProcess.length > 0 &&
+    firstArg !== undefined &&
+    firstArg !== '' &&
+    !firstArg.startsWith('-')
+  ) {
     const possibleCommand = firstArg.toLowerCase();
     if (possibleCommand === 'scrape') {
       command = 'scrape';

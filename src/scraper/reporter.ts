@@ -61,7 +61,11 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
   }
 
   if (summary.bestEffort > 0) {
-    lines.push(chalk.hex('#FFA500')(`${summary.bestEffort} images used best-effort matching (filename variants).`));
+    lines.push(
+      chalk.hex('#FFA500')(
+        `${summary.bestEffort} images used best-effort matching (filename variants).`
+      )
+    );
     lines.push('');
   }
 
@@ -127,7 +131,8 @@ export function renderDryRunList(results: ScrapeResult[]): string {
 
   for (const result of results) {
     const icon = result.status === 'skipped' ? chalk.yellow('○') : chalk.cyan('→');
-    const status = result.status === 'skipped' ? chalk.gray('(skip - exists)') : chalk.gray('(will scrape)');
+    const status =
+      result.status === 'skipped' ? chalk.gray('(skip - exists)') : chalk.gray('(will scrape)');
     lines.push(`  ${icon} ${result.rom.filename} ${status}`);
   }
 

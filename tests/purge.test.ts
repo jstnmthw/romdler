@@ -97,16 +97,11 @@ describe('purge/scanner', () => {
 
       const result = await scanDownloadDir(testDir);
 
-      expect(result.map((f) => f.filename)).toEqual([
-        'donkey.zip',
-        'mario.zip',
-        'zelda.zip',
-      ]);
+      expect(result.map((f) => f.filename)).toEqual(['donkey.zip', 'mario.zip', 'zelda.zip']);
     });
 
     it('throws error for non-existent directory', async () => {
-      await expect(scanDownloadDir('/nonexistent/path'))
-        .rejects.toThrow('Directory not found');
+      await expect(scanDownloadDir('/nonexistent/path')).rejects.toThrow('Directory not found');
     });
 
     it('throws error for permission denied', async () => {
@@ -123,8 +118,7 @@ describe('purge/scanner', () => {
       await chmod(restrictedDir, 0o000);
 
       try {
-        await expect(scanDownloadDir(restrictedDir))
-          .rejects.toThrow('Permission denied');
+        await expect(scanDownloadDir(restrictedDir)).rejects.toThrow('Permission denied');
       } finally {
         // Restore permissions for cleanup
         await chmod(restrictedDir, 0o755);

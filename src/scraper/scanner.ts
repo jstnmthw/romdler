@@ -8,10 +8,7 @@ import type { RomFile } from './types.js';
  * @param extensions - File extensions to include (e.g., ['.zip', '.sfc'])
  * @returns Array of discovered ROM files
  */
-export async function scanForRoms(
-  directory: string,
-  extensions: string[]
-): Promise<RomFile[]> {
+export async function scanForRoms(directory: string, extensions: string[]): Promise<RomFile[]> {
   const normalizedExts = extensions.map((ext) =>
     ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`
   );
@@ -72,10 +69,7 @@ export async function scanForRoms(
  * @param imgsDir - Path to the Imgs directory
  * @returns Path to existing image or null
  */
-export async function findExistingImage(
-  romStem: string,
-  imgsDir: string
-): Promise<string | null> {
+export async function findExistingImage(romStem: string, imgsDir: string): Promise<string | null> {
   const imageExtensions = ['.png', '.jpg', '.jpeg'];
 
   for (const ext of imageExtensions) {

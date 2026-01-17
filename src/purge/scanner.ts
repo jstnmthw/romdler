@@ -7,9 +7,7 @@ import type { PurgeFileEntry } from './types.js';
  * @param directory - Directory to scan
  * @returns Array of file entries
  */
-export async function scanDownloadDir(
-  directory: string
-): Promise<PurgeFileEntry[]> {
+export async function scanDownloadDir(directory: string): Promise<PurgeFileEntry[]> {
   const files: PurgeFileEntry[] = [];
   const absoluteDir = path.resolve(directory);
 

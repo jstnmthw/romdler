@@ -109,16 +109,16 @@ export interface ScrapeOptions {
 
 /** Media types available */
 export type MediaType =
-  | 'ss'        // Screenshot (in-game)
-  | 'sstitle'   // Title screen
-  | 'box-2D'    // 2D box art (front)
-  | 'box-3D'    // 3D box art render
-  | 'mixrbv1'   // Mix image v1
-  | 'mixrbv2'   // Mix image v2
-  | 'wheel'     // Logo/wheel art
-  | 'marquee'   // Arcade marquee
-  | 'fanart'    // Fan artwork
-  | 'video';    // Video preview
+  | 'ss' // Screenshot (in-game)
+  | 'sstitle' // Title screen
+  | 'box-2D' // 2D box art (front)
+  | 'box-3D' // 3D box art render
+  | 'mixrbv1' // Mix image v1
+  | 'mixrbv2' // Mix image v2
+  | 'wheel' // Logo/wheel art
+  | 'marquee' // Arcade marquee
+  | 'fanart' // Fan artwork
+  | 'video'; // Video preview
 
 /** Region codes */
 export type RegionCode = 'wor' | 'us' | 'eu' | 'jp' | 'kr' | 'asi';

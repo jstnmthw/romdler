@@ -7,9 +7,7 @@ import { selectPreferred } from './selector.js';
  * @param roms - Array of ROM files with parsed names
  * @returns Map of signature to array of files
  */
-export function groupRomsBySignature(
-  roms: DedupeRomFile[]
-): Map<string, DedupeRomFile[]> {
+export function groupRomsBySignature(roms: DedupeRomFile[]): Map<string, DedupeRomFile[]> {
   const groups = new Map<string, DedupeRomFile[]>();
 
   for (const rom of roms) {
@@ -42,8 +40,7 @@ export function analyzeGroup(
   // Use first file's title as display title (sorted for consistency)
   const sorted = [...files].sort((a, b) => a.filename.localeCompare(b.filename));
   const firstFile = sorted[0];
-  const displayTitle =
-    firstFile !== undefined ? firstFile.parsed.title : 'Unknown';
+  const displayTitle = firstFile !== undefined ? firstFile.parsed.title : 'Unknown';
 
   // Single file - nothing to dedupe
   if (files.length === 1 && firstFile !== undefined) {

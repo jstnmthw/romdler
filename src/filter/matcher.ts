@@ -1,5 +1,9 @@
 import type { FilterConfig, FilterTarget, FilterExpression } from './types.js';
-import { parseFilterExpression, matchesExpression, matchesExpressionLower } from './expression-parser.js';
+import {
+  parseFilterExpression,
+  matchesExpression,
+  matchesExpressionLower,
+} from './expression-parser.js';
 
 /**
  * Applies whitelist and blacklist filters to a list of files.
@@ -12,10 +16,7 @@ import { parseFilterExpression, matchesExpression, matchesExpressionLower } from
  * 2. If whitelist is empty -> include (unless blacklisted)
  * 3. If whitelist is non-empty -> include only if matches (and not blacklisted)
  */
-export function applyFilters<T extends FilterTarget>(
-  items: T[],
-  config: FilterConfig
-): T[] {
+export function applyFilters<T extends FilterTarget>(items: T[], config: FilterConfig): T[] {
   const whitelistExpr = parseFilterExpression(config.whitelist);
   const blacklistExpr = parseFilterExpression(config.blacklist);
 
@@ -41,9 +42,7 @@ export function applyFilters<T extends FilterTarget>(
 /**
  * Creates a filter function for use with Array.filter.
  */
-export function createFilterFn(
-  config: FilterConfig
-): (item: FilterTarget) => boolean {
+export function createFilterFn(config: FilterConfig): (item: FilterTarget) => boolean {
   const whitelistExpr = parseFilterExpression(config.whitelist);
   const blacklistExpr = parseFilterExpression(config.blacklist);
 

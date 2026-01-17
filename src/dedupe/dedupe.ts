@@ -3,12 +3,7 @@ import { readdir } from 'fs/promises';
 import chalk from 'chalk';
 import type { Config } from '../config/index.js';
 import { atomicMove, ensureDir } from '../utils/index.js';
-import type {
-  DedupeRomFile,
-  DedupeResult,
-  DedupeSummary,
-  RomGroup,
-} from './types.js';
+import type { DedupeRomFile, DedupeResult, DedupeSummary, RomGroup } from './types.js';
 import { parseRomFilename } from './parser.js';
 import { groupRomsBySignature, analyzeGroup, getGroupsWithDuplicates } from './grouper.js';
 
@@ -72,10 +67,7 @@ async function scanDirectory(directory: string): Promise<DedupeRomFile[]> {
  * @param file - File to move
  * @param deletedDir - Path to the deleted folder
  */
-async function moveToDeleted(
-  file: DedupeRomFile,
-  deletedDir: string
-): Promise<DedupeResult> {
+async function moveToDeleted(file: DedupeRomFile, deletedDir: string): Promise<DedupeResult> {
   try {
     const destPath = path.join(deletedDir, file.filename);
     await atomicMove(file.path, destPath);
@@ -158,10 +150,7 @@ function printDryRunPreview(groups: RomGroup[]): DedupeResult[] {
 /**
  * Move duplicate files to deleted folder
  */
-async function moveFiles(
-  groups: RomGroup[],
-  deletedDir: string
-): Promise<DedupeResult[]> {
+async function moveFiles(groups: RomGroup[], deletedDir: string): Promise<DedupeResult[]> {
   const results: DedupeResult[] = [];
 
   // Ensure deleted directory exists
@@ -186,9 +175,7 @@ async function moveFiles(
     const result = await moveToDeleted(file, deletedDir);
     results.push(result);
 
-    const prefix = chalk.gray(
-      `[${String(i + 1).padStart(String(total).length)}/${total}]`
-    );
+    const prefix = chalk.gray(`[${String(i + 1).padStart(String(total).length)}/${total}]`);
     if (result.status === 'removed') {
       console.log(`${prefix} ${chalk.yellow('\u2192')} ${result.file.filename}`);
     } else {
@@ -292,10 +279,7 @@ function applyLimit(groups: RomGroup[], limit: number): RomGroup[] {
  * @param options - Dedupe options
  * @returns Array of dedupe results
  */
-export async function runDedupe(
-  config: Config,
-  options: DedupeOptions
-): Promise<DedupeResult[]> {
+export async function runDedupe(config: Config, options: DedupeOptions): Promise<DedupeResult[]> {
   const downloadDir = path.resolve(config.downloadDir);
   const deletedDir = path.join(downloadDir, 'deleted');
 
@@ -329,19 +313,13 @@ export async function runDedupe(
     return [];
   }
 
-  console.log(
-    `${chalk.gray('Groups with duplicates:')} ${chalk.white(duplicateGroups.length)}`
-  );
+  console.log(`${chalk.gray('Groups with duplicates:')} ${chalk.white(duplicateGroups.length)}`);
 
   // Count total files to remove before limit
   const totalToRemove = countFilesToRemove(duplicateGroups);
 
   // Apply limit if specified
-  if (
-    options.limit !== undefined &&
-    options.limit > 0 &&
-    options.limit < totalToRemove
-  ) {
+  if (options.limit !== undefined && options.limit > 0 && options.limit < totalToRemove) {
     console.log(`${chalk.gray('Limiting to:')} ${chalk.white(options.limit)} removals`);
     duplicateGroups = applyLimit(duplicateGroups, options.limit);
   }
@@ -369,12 +347,7 @@ export async function runDedupe(
   const results = await moveFiles(duplicateGroups, deletedDir);
 
   // Print summary
-  const summary = calculateSummary(
-    files.length,
-    duplicateGroups.length,
-    results,
-    keptCount
-  );
+  const summary = calculateSummary(files.length, duplicateGroups.length, results, keptCount);
   printSummary(summary);
 
   return results;

@@ -1,6 +1,11 @@
 import { resolve } from 'node:path';
 import { loadConfig, type Config } from './config/index.js';
-import { parseArgs, type ScrapeCliArgs, type PurgeCliArgs, type DedupeCliArgs } from './cli/index.js';
+import {
+  parseArgs,
+  type ScrapeCliArgs,
+  type PurgeCliArgs,
+  type DedupeCliArgs,
+} from './cli/index.js';
 import { fetchHtml, isHttpError } from './http/index.js';
 import { parseTableLinks, filterZipLinks } from './parser/index.js';
 import { applyFilters } from './filter/index.js';
@@ -143,12 +148,7 @@ async function processUrl(
   };
 
   if (config.concurrency > 1) {
-    await downloadConcurrent(
-      downloadList,
-      downloadOptions,
-      config.concurrency,
-      onComplete
-    );
+    await downloadConcurrent(downloadList, downloadOptions, config.concurrency, onComplete);
   } else {
     await downloadSequential(downloadList, downloadOptions, onProgress, onComplete);
   }
@@ -185,10 +185,7 @@ async function runDownloadCommand(
   process.exit(hasFailures ? 1 : 0);
 }
 
-async function runScrapeCommand(
-  config: Config,
-  cliArgs: ScrapeCliArgs
-): Promise<void> {
+async function runScrapeCommand(config: Config, cliArgs: ScrapeCliArgs): Promise<void> {
   try {
     const results = await runScraper(config, {
       dryRun: cliArgs.dryRun,
@@ -202,17 +199,12 @@ async function runScrapeCommand(
     const hasFailures = results.some((r) => r.status === 'failed');
     process.exit(hasFailures ? 1 : 0);
   } catch (err) {
-    console.error(
-      err instanceof Error ? err.message : 'Scraper failed'
-    );
+    console.error(err instanceof Error ? err.message : 'Scraper failed');
     process.exit(1);
   }
 }
 
-async function runPurgeCommand(
-  config: Config,
-  cliArgs: PurgeCliArgs
-): Promise<void> {
+async function runPurgeCommand(config: Config, cliArgs: PurgeCliArgs): Promise<void> {
   try {
     const results = await runPurge(config, {
       dryRun: cliArgs.dryRun,
@@ -223,17 +215,12 @@ async function runPurgeCommand(
     const hasFailures = results.some((r) => r.status === 'failed');
     process.exit(hasFailures ? 1 : 0);
   } catch (err) {
-    console.error(
-      err instanceof Error ? err.message : 'Purge failed'
-    );
+    console.error(err instanceof Error ? err.message : 'Purge failed');
     process.exit(1);
   }
 }
 
-async function runDedupeCommand(
-  config: Config,
-  cliArgs: DedupeCliArgs
-): Promise<void> {
+async function runDedupeCommand(config: Config, cliArgs: DedupeCliArgs): Promise<void> {
   try {
     const results = await runDedupe(config, {
       dryRun: cliArgs.dryRun,
@@ -244,9 +231,7 @@ async function runDedupeCommand(
     const hasFailures = results.some((r) => r.status === 'failed');
     process.exit(hasFailures ? 1 : 0);
   } catch (err) {
-    console.error(
-      err instanceof Error ? err.message : 'Dedupe failed'
-    );
+    console.error(err instanceof Error ? err.message : 'Dedupe failed');
     process.exit(1);
   }
 }
@@ -259,9 +244,7 @@ async function main(): Promise<void> {
   try {
     config = loadConfig(cliArgs.configPath);
   } catch (err) {
-    console.error(
-      err instanceof Error ? err.message : 'Failed to load configuration'
-    );
+    console.error(err instanceof Error ? err.message : 'Failed to load configuration');
     process.exit(1);
   }
 

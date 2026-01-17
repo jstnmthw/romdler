@@ -91,11 +91,7 @@ function getRegionPriority(file: DedupeRomFile, regionPriority: string[]): numbe
  * @param prefs - User preferences
  * @returns Negative if a is preferred, positive if b is preferred, 0 if equal
  */
-function compareFiles(
-  a: DedupeRomFile,
-  b: DedupeRomFile,
-  prefs: DedupePreferences
-): number {
+function compareFiles(a: DedupeRomFile, b: DedupeRomFile, prefs: DedupePreferences): number {
   // 1. Fewer avoid tokens = better
   const aAvoid = countAvoidTokens(a, prefs.avoid);
   const bAvoid = countAvoidTokens(b, prefs.avoid);

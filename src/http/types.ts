@@ -20,12 +20,7 @@ export class HttpError extends Error {
   readonly status?: number;
   readonly retryable: boolean;
 
-  constructor(
-    type: HttpErrorType,
-    message: string,
-    retryable: boolean,
-    status?: number
-  ) {
+  constructor(type: HttpErrorType, message: string, retryable: boolean, status?: number) {
     super(message);
     this.name = 'HttpError';
     this.type = type;

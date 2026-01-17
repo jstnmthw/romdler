@@ -12,11 +12,7 @@ import {
   safeDelete,
   ensureDir,
 } from '../utils/index.js';
-import type {
-  DownloadOptions,
-  DownloadResult,
-  ProgressCallback,
-} from './types.js';
+import type { DownloadOptions, DownloadResult, ProgressCallback } from './types.js';
 
 /**
  * Checks if a file already exists and should be skipped.
@@ -106,9 +102,7 @@ export async function downloadFile(
             bytesDownloaded,
             totalBytes: contentLength,
             percentage:
-              contentLength !== null
-                ? Math.round((bytesDownloaded / contentLength) * 100)
-                : null,
+              contentLength !== null ? Math.round((bytesDownloaded / contentLength) * 100) : null,
           });
         }
 
@@ -189,7 +183,9 @@ export async function downloadConcurrent(
   concurrency: number,
   onFileComplete?: (result: DownloadResult, index: number, total: number) => void
 ): Promise<DownloadResult[]> {
-  const results: (DownloadResult | undefined)[] = new Array<DownloadResult | undefined>(files.length);
+  const results: (DownloadResult | undefined)[] = new Array<DownloadResult | undefined>(
+    files.length
+  );
   let nextIndex = 0;
   let completedCount = 0;
 
@@ -212,9 +208,7 @@ export async function downloadConcurrent(
   }
 
   // Start workers
-  const workers = Array.from({ length: Math.min(concurrency, files.length) }, () =>
-    worker()
-  );
+  const workers = Array.from({ length: Math.min(concurrency, files.length) }, () => worker());
 
   await Promise.all(workers);
 

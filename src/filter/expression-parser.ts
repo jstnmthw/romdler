@@ -19,15 +19,15 @@ export function parseFilterExpression(filters: string[]): FilterExpression {
     return [];
   }
 
-  return filters.map((entry) => {
-    // Split by " AND " (case-insensitive)
-    const parts = entry.split(/\s+AND\s+/i);
+  return filters
+    .map((entry) => {
+      // Split by " AND " (case-insensitive)
+      const parts = entry.split(/\s+AND\s+/i);
 
-    // Trim and lowercase each term, filter out empty strings
-    return parts
-      .map((term) => term.trim().toLowerCase())
-      .filter((term) => term !== '');
-  }).filter((terms) => terms.length > 0);
+      // Trim and lowercase each term, filter out empty strings
+      return parts.map((term) => term.trim().toLowerCase()).filter((term) => term !== '');
+    })
+    .filter((terms) => terms.length > 0);
 }
 
 /**
@@ -37,10 +37,7 @@ export function parseFilterExpression(filters: string[]): FilterExpression {
  * @param expression - The parsed filter expression
  * @returns true if any OR clause matches (where all AND terms in that clause match)
  */
-export function matchesExpression(
-  target: string,
-  expression: FilterExpression
-): boolean {
+export function matchesExpression(target: string, expression: FilterExpression): boolean {
   if (expression.length === 0) {
     return false;
   }
@@ -57,10 +54,7 @@ export function matchesExpression(
  * @param expression - The parsed filter expression
  * @returns true if any OR clause matches (where all AND terms in that clause match)
  */
-export function matchesExpressionLower(
-  lowerTarget: string,
-  expression: FilterExpression
-): boolean {
+export function matchesExpressionLower(lowerTarget: string, expression: FilterExpression): boolean {
   if (expression.length === 0) {
     return false;
   }

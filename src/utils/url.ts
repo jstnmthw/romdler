@@ -40,7 +40,10 @@ export function extractFilename(url: string): string {
  * More efficient than calling resolveUrl + extractFilename separately
  * as it reuses the same URL object.
  */
-export function resolveAndExtract(href: string, baseUrl: string): { url: string; filename: string } {
+export function resolveAndExtract(
+  href: string,
+  baseUrl: string
+): { url: string; filename: string } {
   try {
     const resolved = new URL(href, baseUrl);
     const segments = resolved.pathname.split('/');

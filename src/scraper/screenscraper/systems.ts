@@ -7,152 +7,152 @@ export interface SystemDefinition {
 
 /** ScreenScraper system ID mappings */
 export const SYSTEMS: Record<string, SystemDefinition> = {
-  'genesis': {
+  genesis: {
     id: 1,
     name: 'Sega Genesis / Mega Drive',
     extensions: ['.gen', '.md', '.smd', '.bin', '.zip'],
   },
-  'mastersystem': {
+  mastersystem: {
     id: 2,
     name: 'Sega Master System',
     extensions: ['.sms', '.zip'],
   },
-  'nes': {
+  nes: {
     id: 3,
     name: 'Nintendo Entertainment System',
     extensions: ['.nes', '.zip'],
   },
-  'snes': {
+  snes: {
     id: 4,
     name: 'Super Nintendo Entertainment System',
     extensions: ['.sfc', '.smc', '.zip'],
   },
-  'gamegear': {
+  gamegear: {
     id: 5,
     name: 'Sega Game Gear',
     extensions: ['.gg', '.zip'],
   },
-  'gameboy': {
+  gameboy: {
     id: 9,
     name: 'Nintendo Game Boy',
     extensions: ['.gb', '.zip'],
   },
-  'gbc': {
+  gbc: {
     id: 10,
     name: 'Nintendo Game Boy Color',
     extensions: ['.gbc', '.gb', '.zip'],
   },
-  'gba': {
+  gba: {
     id: 12,
     name: 'Nintendo Game Boy Advance',
     extensions: ['.gba', '.zip'],
   },
-  'n64': {
+  n64: {
     id: 14,
     name: 'Nintendo 64',
     extensions: ['.n64', '.v64', '.z64', '.zip'],
   },
-  'saturn': {
+  saturn: {
     id: 22,
     name: 'Sega Saturn',
     extensions: ['.bin', '.cue', '.iso', '.chd'],
   },
-  'dreamcast': {
+  dreamcast: {
     id: 23,
     name: 'Sega Dreamcast',
     extensions: ['.chd', '.cdi', '.gdi', '.cue'],
   },
-  'atari2600': {
+  atari2600: {
     id: 26,
     name: 'Atari 2600',
     extensions: ['.a26', '.bin', '.zip'],
   },
-  'atari7800': {
+  atari7800: {
     id: 27,
     name: 'Atari 7800',
     extensions: ['.a78', '.bin', '.zip'],
   },
-  'lynx': {
+  lynx: {
     id: 43,
     name: 'Atari Lynx',
     extensions: ['.lnx', '.zip'],
   },
-  'psx': {
+  psx: {
     id: 57,
     name: 'Sony PlayStation',
     extensions: ['.bin', '.cue', '.pbp', '.chd', '.m3u', '.iso'],
   },
-  'psp': {
+  psp: {
     id: 58,
     name: 'Sony PlayStation Portable',
     extensions: ['.iso', '.cso', '.pbp'],
   },
-  'c64': {
+  c64: {
     id: 66,
     name: 'Commodore 64',
     extensions: ['.d64', '.g64', '.prg', '.crt', '.tap', '.t64', '.zip'],
   },
-  'mame': {
+  mame: {
     id: 75,
     name: 'MAME',
     extensions: ['.zip'],
   },
-  'nds': {
+  nds: {
     id: 106,
     name: 'Nintendo DS',
     extensions: ['.nds', '.zip'],
   },
-  'neogeo': {
+  neogeo: {
     id: 142,
     name: 'SNK Neo Geo',
     extensions: ['.zip'],
   },
-  'pcengine': {
+  pcengine: {
     id: 31,
     name: 'NEC PC Engine / TurboGrafx-16',
     extensions: ['.pce', '.zip'],
   },
-  'pcenginecd': {
+  pcenginecd: {
     id: 114,
     name: 'NEC PC Engine CD / TurboGrafx-CD',
     extensions: ['.cue', '.chd', '.iso'],
   },
-  'segacd': {
+  segacd: {
     id: 20,
     name: 'Sega CD / Mega CD',
     extensions: ['.cue', '.chd', '.iso', '.bin'],
   },
-  'sega32x': {
+  sega32x: {
     id: 19,
     name: 'Sega 32X',
     extensions: ['.32x', '.bin', '.zip'],
   },
-  'coleco': {
+  coleco: {
     id: 48,
     name: 'ColecoVision',
     extensions: ['.col', '.rom', '.zip'],
   },
-  'intellivision': {
+  intellivision: {
     id: 115,
     name: 'Mattel Intellivision',
     extensions: ['.int', '.bin', '.rom', '.zip'],
   },
-  'ngpc': {
+  ngpc: {
     id: 82,
     name: 'SNK Neo Geo Pocket Color',
     extensions: ['.ngc', '.ngp', '.zip'],
   },
-  'wonderswan': {
+  wonderswan: {
     id: 45,
     name: 'Bandai WonderSwan',
     extensions: ['.ws', '.zip'],
   },
-  'wonderswancolor': {
+  wonderswancolor: {
     id: 46,
     name: 'Bandai WonderSwan Color',
     extensions: ['.wsc', '.zip'],
   },
-  'virtualboy': {
+  virtualboy: {
     id: 11,
     name: 'Nintendo Virtual Boy',
     extensions: ['.vb', '.zip'],

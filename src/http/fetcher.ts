@@ -33,10 +33,7 @@ function isRetryableError(error: unknown): boolean {
 /**
  * Fetches a URL with retry logic and timeout support.
  */
-export async function fetchWithRetry(
-  url: string,
-  options: FetchOptions
-): Promise<FetchResult> {
+export async function fetchWithRetry(url: string, options: FetchOptions): Promise<FetchResult> {
   let lastError: HttpError | null = null;
 
   for (let attempt = 0; attempt <= options.retries; attempt++) {
@@ -162,8 +159,7 @@ export async function fetchStream(
   }
 
   const contentLengthHeader = result.headers.get('content-length');
-  const contentLength =
-    contentLengthHeader !== null ? parseInt(contentLengthHeader, 10) : null;
+  const contentLength = contentLengthHeader !== null ? parseInt(contentLengthHeader, 10) : null;
 
   return {
     body: result.body,

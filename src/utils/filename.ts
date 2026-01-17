@@ -1,8 +1,8 @@
 import { resolve, basename } from 'node:path';
 
 // Pre-compiled regexes for sanitizeFilename (avoid recompilation per call)
-const REPLACE_WITH_UNDERSCORE_REGEX = /[/\\<>:"|?*]/g;  // Replace these with underscore
-const REMOVE_CHARS_REGEX = /[\x00-\x1f\x7f]/g;          // Remove control chars entirely
+const REPLACE_WITH_UNDERSCORE_REGEX = /[/\\<>:"|?*]/g; // Replace these with underscore
+const REMOVE_CHARS_REGEX = /[\x00-\x1f\x7f]/g; // Remove control chars entirely
 const LEADING_DOTS_REGEX = /^\.+/;
 
 /**

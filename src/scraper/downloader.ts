@@ -31,16 +31,8 @@ export interface DownloadImageResult {
  * Download an image from a URL and save it to disk
  * Uses atomic write pattern (temp file -> rename) to prevent partial files
  */
-export async function downloadImage(
-  options: DownloadImageOptions
-): Promise<DownloadImageResult> {
-  const {
-    url,
-    outputDir,
-    filename,
-    userAgent,
-    timeoutMs = 30000,
-  } = options;
+export async function downloadImage(options: DownloadImageOptions): Promise<DownloadImageResult> {
+  const { url, outputDir, filename, userAgent, timeoutMs = 30000 } = options;
 
   // Ensure output directory exists
   await mkdir(outputDir, { recursive: true });

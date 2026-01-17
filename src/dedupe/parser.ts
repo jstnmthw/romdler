@@ -223,8 +223,7 @@ function extractTitle(filename: string): string {
 
   // Find first parenthesis
   const parenIndex = withoutExt.indexOf('(');
-  const title =
-    parenIndex > 0 ? withoutExt.substring(0, parenIndex).trim() : withoutExt.trim();
+  const title = parenIndex > 0 ? withoutExt.substring(0, parenIndex).trim() : withoutExt.trim();
 
   return title;
 }

@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { parseRomFilename } from '../src/dedupe/parser.js';
-import { groupRomsBySignature, analyzeGroup, getGroupsWithDuplicates } from '../src/dedupe/grouper.js';
+import {
+  groupRomsBySignature,
+  analyzeGroup,
+  getGroupsWithDuplicates,
+} from '../src/dedupe/grouper.js';
 import { selectPreferred, getDefaultPreferences } from '../src/dedupe/selector.js';
 import type { DedupeRomFile, RomGroup } from '../src/dedupe/types.js';
 import type { DedupePreferences } from '../src/config/index.js';
@@ -44,10 +48,26 @@ describe('dedupe/parser', () => {
 
     it('recognizes all standard regions', () => {
       const regions = [
-        'USA', 'Europe', 'Japan', 'World', 'Australia', 'Brazil',
-        'Canada', 'China', 'France', 'Germany', 'Hong Kong', 'Italy',
-        'Korea', 'Mexico', 'Netherlands', 'Russia', 'Spain', 'Sweden',
-        'Taiwan', 'UK'
+        'USA',
+        'Europe',
+        'Japan',
+        'World',
+        'Australia',
+        'Brazil',
+        'Canada',
+        'China',
+        'France',
+        'Germany',
+        'Hong Kong',
+        'Italy',
+        'Korea',
+        'Mexico',
+        'Netherlands',
+        'Russia',
+        'Spain',
+        'Sweden',
+        'Taiwan',
+        'UK',
       ];
 
       for (const region of regions) {
@@ -503,10 +523,7 @@ describe('dedupe/grouper', () => {
     });
 
     it('separates files with different titles', () => {
-      const files = [
-        createRomFile('Game A (USA).zip'),
-        createRomFile('Game B (USA).zip'),
-      ];
+      const files = [createRomFile('Game A (USA).zip'), createRomFile('Game B (USA).zip')];
 
       const groups = groupRomsBySignature(files);
       expect(groups.size).toBe(2);
@@ -514,10 +531,7 @@ describe('dedupe/grouper', () => {
 
     it('groups files with same title but different regions', () => {
       // New behavior: title-only signatures group all regional variants
-      const files = [
-        createRomFile('Game A (USA).zip'),
-        createRomFile('Game A (Europe).zip'),
-      ];
+      const files = [createRomFile('Game A (USA).zip'), createRomFile('Game A (Europe).zip')];
 
       const groups = groupRomsBySignature(files);
       expect(groups.size).toBe(1); // Same title = same group
@@ -546,10 +560,7 @@ describe('dedupe/grouper', () => {
 
   describe('analyzeGroup', () => {
     it('identifies clean version as preferred', () => {
-      const files = [
-        createRomFile('Game (USA).zip'),
-        createRomFile('Game (USA) (Rev 1).zip'),
-      ];
+      const files = [createRomFile('Game (USA).zip'), createRomFile('Game (USA) (Rev 1).zip')];
 
       const result = analyzeGroup('test', files);
 
@@ -702,10 +713,7 @@ describe('dedupe/grouper', () => {
 
     it('picks best file even when all have extra tokens or variants', () => {
       // New behavior: preference-based selection picks one regardless
-      const files = [
-        createRomFile('Game (USA) [b].zip'),
-        createRomFile('Game (USA) (Beta).zip'),
-      ];
+      const files = [createRomFile('Game (USA) [b].zip'), createRomFile('Game (USA) (Beta).zip')];
 
       const result = analyzeGroup('test', files);
 
@@ -769,20 +777,14 @@ describe('dedupe/selector', () => {
 
   describe('selectPreferred', () => {
     it('prefers USA region over Europe', () => {
-      const files = [
-        createRomFile('Game (Europe).zip'),
-        createRomFile('Game (USA).zip'),
-      ];
+      const files = [createRomFile('Game (Europe).zip'), createRomFile('Game (USA).zip')];
 
       const { preferred } = selectPreferred(files);
       expect(preferred.filename).toBe('Game (USA).zip');
     });
 
     it('prefers file without avoid tokens', () => {
-      const files = [
-        createRomFile('Game (USA) (Beta).zip'),
-        createRomFile('Game (USA).zip'),
-      ];
+      const files = [createRomFile('Game (USA) (Beta).zip'), createRomFile('Game (USA).zip')];
 
       const { preferred } = selectPreferred(files);
       expect(preferred.filename).toBe('Game (USA).zip');
@@ -799,10 +801,7 @@ describe('dedupe/selector', () => {
     });
 
     it('uses shorter filename as tiebreaker', () => {
-      const files = [
-        createRomFile('Game (USA) (En,Fr,De).zip'),
-        createRomFile('Game (USA).zip'),
-      ];
+      const files = [createRomFile('Game (USA) (En,Fr,De).zip'), createRomFile('Game (USA).zip')];
 
       const { preferred } = selectPreferred(files);
       expect(preferred.filename).toBe('Game (USA).zip');
@@ -833,10 +832,7 @@ describe('dedupe/selector', () => {
     });
 
     it('respects custom preferences', () => {
-      const files = [
-        createRomFile('Game (USA).zip'),
-        createRomFile('Game (Japan).zip'),
-      ];
+      const files = [createRomFile('Game (USA).zip'), createRomFile('Game (Japan).zip')];
 
       const japanFirstPrefs: DedupePreferences = {
         regions: ['Japan', 'USA', 'Europe'],
@@ -849,10 +845,7 @@ describe('dedupe/selector', () => {
     });
 
     it('handles files with no matching preferred region', () => {
-      const files = [
-        createRomFile('Game (Brazil).zip'),
-        createRomFile('Game (Mexico).zip'),
-      ];
+      const files = [createRomFile('Game (Brazil).zip'), createRomFile('Game (Mexico).zip')];
 
       // Neither Brazil nor Mexico is in default regions list
       const { preferred } = selectPreferred(files);
@@ -861,10 +854,7 @@ describe('dedupe/selector', () => {
     });
 
     it('uses alphabetical tiebreaker when configured', () => {
-      const files = [
-        createRomFile('Game B (USA).zip'),
-        createRomFile('Game A (USA).zip'),
-      ];
+      const files = [createRomFile('Game B (USA).zip'), createRomFile('Game A (USA).zip')];
 
       const alphabeticalPrefs: DedupePreferences = {
         regions: ['USA'],
@@ -877,10 +867,7 @@ describe('dedupe/selector', () => {
     });
 
     it('falls back to alphabetical when filenames have same length', () => {
-      const files = [
-        createRomFile('Game B (USA).zip'),
-        createRomFile('Game A (USA).zip'),
-      ];
+      const files = [createRomFile('Game B (USA).zip'), createRomFile('Game A (USA).zip')];
 
       // Same length, same region, no avoid - falls to alphabetical
       const { preferred } = selectPreferred(files);
@@ -922,17 +909,17 @@ describe('dedupe/selector', () => {
       expect(toRemove).toHaveLength(3);
     });
 
-    it('picks one from Beta versions (Bard\'s Tale case)', () => {
+    it("picks one from Beta versions (Bard's Tale case)", () => {
       const files = [
-        createRomFile('Bard\'s Tale, The - Tales of the Unknown (USA) (Beta 1).zip'),
-        createRomFile('Bard\'s Tale, The - Tales of the Unknown (USA) (Beta 2).zip'),
+        createRomFile("Bard's Tale, The - Tales of the Unknown (USA) (Beta 1).zip"),
+        createRomFile("Bard's Tale, The - Tales of the Unknown (USA) (Beta 2).zip"),
       ];
 
       const { preferred, toRemove } = selectPreferred(files);
       expect(preferred).not.toBeNull();
       expect(toRemove).toHaveLength(1);
       // Beta 1 should win due to shorter filename
-      expect(preferred.filename).toBe('Bard\'s Tale, The - Tales of the Unknown (USA) (Beta 1).zip');
+      expect(preferred.filename).toBe("Bard's Tale, The - Tales of the Unknown (USA) (Beta 1).zip");
     });
   });
 

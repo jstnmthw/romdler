@@ -95,7 +95,11 @@ const scraperSchema = z.object({
   /** Libretro Thumbnails adapter config (default, no auth required) */
   libretro: libretroConfigSchema.default({ enabled: true, priority: 1 }),
   /** ScreenScraper adapter config (requires credentials) */
-  screenscraper: screenscraperConfigSchema.default({ enabled: false, priority: 2, rateLimitMs: 1000 }),
+  screenscraper: screenscraperConfigSchema.default({
+    enabled: false,
+    priority: 2,
+    rateLimitMs: 1000,
+  }),
 });
 
 export const configSchema = z.object({

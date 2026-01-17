@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { LibretroManifest, getManifestInstance, clearManifestInstance } from '../src/scraper/libretro/manifest.js';
+import {
+  LibretroManifest,
+  getManifestInstance,
+  clearManifestInstance,
+} from '../src/scraper/libretro/manifest.js';
 import { isSystemSupported } from '../src/scraper/libretro/systems.js';
 import { sanitizeFilename, hasInvalidChars } from '../src/scraper/libretro/sanitizer.js';
 import { LibretroAdapter, createLibretroAdapter } from '../src/scraper/libretro/adapter.js';
@@ -27,29 +31,33 @@ describe('LibretroManifest', () => {
         fetchedAt: Date.now(),
       };
 
-      expect(manifest.exactMatch(entry, 'Super Mario Bros. (World)')).toBe('Super Mario Bros. (World)');
-      expect(manifest.exactMatch(entry, 'Donkey Kong (Japan, USA)')).toBe('Donkey Kong (Japan, USA)');
+      expect(manifest.exactMatch(entry, 'Super Mario Bros. (World)')).toBe(
+        'Super Mario Bros. (World)'
+      );
+      expect(manifest.exactMatch(entry, 'Donkey Kong (Japan, USA)')).toBe(
+        'Donkey Kong (Japan, USA)'
+      );
     });
 
     it('finds case-insensitive match', () => {
       const entry = {
         filenames: new Set(['Super Mario Bros. (World)']),
-        lowercaseMap: new Map([
-          ['super mario bros. (world)', 'Super Mario Bros. (World)'],
-        ]),
+        lowercaseMap: new Map([['super mario bros. (world)', 'Super Mario Bros. (World)']]),
         fetchedAt: Date.now(),
       };
 
-      expect(manifest.exactMatch(entry, 'super mario bros. (world)')).toBe('Super Mario Bros. (World)');
-      expect(manifest.exactMatch(entry, 'SUPER MARIO BROS. (WORLD)')).toBe('Super Mario Bros. (World)');
+      expect(manifest.exactMatch(entry, 'super mario bros. (world)')).toBe(
+        'Super Mario Bros. (World)'
+      );
+      expect(manifest.exactMatch(entry, 'SUPER MARIO BROS. (WORLD)')).toBe(
+        'Super Mario Bros. (World)'
+      );
     });
 
     it('returns null for no match', () => {
       const entry = {
         filenames: new Set(['Super Mario Bros. (World)']),
-        lowercaseMap: new Map([
-          ['super mario bros. (world)', 'Super Mario Bros. (World)'],
-        ]),
+        lowercaseMap: new Map([['super mario bros. (world)', 'Super Mario Bros. (World)']]),
         fetchedAt: Date.now(),
       };
 
@@ -61,9 +69,7 @@ describe('LibretroManifest', () => {
     it('returns exact match with bestEffort=false', () => {
       const entry = {
         filenames: new Set(['Super Mario Bros. (World)']),
-        lowercaseMap: new Map([
-          ['super mario bros. (world)', 'Super Mario Bros. (World)'],
-        ]),
+        lowercaseMap: new Map([['super mario bros. (world)', 'Super Mario Bros. (World)']]),
         fetchedAt: Date.now(),
       };
 
@@ -76,9 +82,7 @@ describe('LibretroManifest', () => {
     it('strips variant tags and finds match', () => {
       const entry = {
         filenames: new Set(['Aladdin (USA)']),
-        lowercaseMap: new Map([
-          ['aladdin (usa)', 'Aladdin (USA)'],
-        ]),
+        lowercaseMap: new Map([['aladdin (usa)', 'Aladdin (USA)']]),
         fetchedAt: Date.now(),
       };
 
@@ -91,9 +95,7 @@ describe('LibretroManifest', () => {
     it('strips multiple variant tags', () => {
       const entry = {
         filenames: new Set(['Airball (USA)']),
-        lowercaseMap: new Map([
-          ['airball (usa)', 'Airball (USA)'],
-        ]),
+        lowercaseMap: new Map([['airball (usa)', 'Airball (USA)']]),
         fetchedAt: Date.now(),
       };
 
@@ -106,9 +108,7 @@ describe('LibretroManifest', () => {
     it('strips e-Reader suffix', () => {
       const entry = {
         filenames: new Set(['Donkey Kong (Japan, USA)']),
-        lowercaseMap: new Map([
-          ['donkey kong (japan, usa)', 'Donkey Kong (Japan, USA)'],
-        ]),
+        lowercaseMap: new Map([['donkey kong (japan, usa)', 'Donkey Kong (Japan, USA)']]),
         fetchedAt: Date.now(),
       };
 
@@ -139,9 +139,7 @@ describe('LibretroManifest', () => {
     it('returns null when no match found', () => {
       const entry = {
         filenames: new Set(['Super Mario Bros. (World)']),
-        lowercaseMap: new Map([
-          ['super mario bros. (world)', 'Super Mario Bros. (World)'],
-        ]),
+        lowercaseMap: new Map([['super mario bros. (world)', 'Super Mario Bros. (World)']]),
         fetchedAt: Date.now(),
       };
 
@@ -152,9 +150,7 @@ describe('LibretroManifest', () => {
     it('strips BIOS prefix', () => {
       const entry = {
         filenames: new Set(['Demo Vision (USA)']),
-        lowercaseMap: new Map([
-          ['demo vision (usa)', 'Demo Vision (USA)'],
-        ]),
+        lowercaseMap: new Map([['demo vision (usa)', 'Demo Vision (USA)']]),
         fetchedAt: Date.now(),
       };
 
@@ -167,9 +163,7 @@ describe('LibretroManifest', () => {
     it('strips Beta suffix', () => {
       const entry = {
         filenames: new Set(['Caveman Ninja (USA)']),
-        lowercaseMap: new Map([
-          ['caveman ninja (usa)', 'Caveman Ninja (USA)'],
-        ]),
+        lowercaseMap: new Map([['caveman ninja (usa)', 'Caveman Ninja (USA)']]),
         fetchedAt: Date.now(),
       };
 
@@ -182,14 +176,15 @@ describe('LibretroManifest', () => {
     it('strips Retro-Bit publisher tag', () => {
       const entry = {
         filenames: new Set(["Hammerin' Harry (USA)"]),
-        lowercaseMap: new Map([
-          ["hammerin' harry (usa)", "Hammerin' Harry (USA)"],
-        ]),
+        lowercaseMap: new Map([["hammerin' harry (usa)", "Hammerin' Harry (USA)"]]),
         fetchedAt: Date.now(),
       };
 
       // Title would be "Hammerin' Harry 2 - Dan the Red Strikes Back" - different game
-      const result = manifest.findMatch(entry, "Hammerin' Harry 2 - Dan the Red Strikes Back (USA) (Retro-Bit)");
+      const result = manifest.findMatch(
+        entry,
+        "Hammerin' Harry 2 - Dan the Red Strikes Back (USA) (Retro-Bit)"
+      );
       // Won't match because base title is different
       expect(result).toBeNull();
     });
@@ -494,9 +489,7 @@ describe('LibretroManifest', () => {
     it('handles USA, Europe joint region', () => {
       const entry = {
         filenames: new Set(['Game (USA, Europe)']),
-        lowercaseMap: new Map([
-          ['game (usa, europe)', 'Game (USA, Europe)'],
-        ]),
+        lowercaseMap: new Map([['game (usa, europe)', 'Game (USA, Europe)']]),
       };
 
       const result = manifest.findMatch(entry, 'Game (USA)');
@@ -507,9 +500,7 @@ describe('LibretroManifest', () => {
     it('handles Japan, USA joint region', () => {
       const entry = {
         filenames: new Set(['Game (Japan, USA)']),
-        lowercaseMap: new Map([
-          ['game (japan, usa)', 'Game (Japan, USA)'],
-        ]),
+        lowercaseMap: new Map([['game (japan, usa)', 'Game (Japan, USA)']]),
       };
 
       const result = manifest.findMatch(entry, 'Game (USA)');
@@ -520,9 +511,7 @@ describe('LibretroManifest', () => {
     it('returns single candidate without region check', () => {
       const entry = {
         filenames: new Set(['Game (Unknown Region)']),
-        lowercaseMap: new Map([
-          ['game (unknown region)', 'Game (Unknown Region)'],
-        ]),
+        lowercaseMap: new Map([['game (unknown region)', 'Game (Unknown Region)']]),
       };
 
       const result = manifest.findMatch(entry, 'Game (USA)');
@@ -533,9 +522,7 @@ describe('LibretroManifest', () => {
     it('returns null when base title is empty', () => {
       const entry = {
         filenames: new Set(['Game (USA)']),
-        lowercaseMap: new Map([
-          ['game (usa)', 'Game (USA)'],
-        ]),
+        lowercaseMap: new Map([['game (usa)', 'Game (USA)']]),
       };
 
       // Filename starting with ( has no title
@@ -546,9 +533,7 @@ describe('LibretroManifest', () => {
     it('handles Europe region in priority', () => {
       const entry = {
         filenames: new Set(['Game (Europe)']),
-        lowercaseMap: new Map([
-          ['game (europe)', 'Game (Europe)'],
-        ]),
+        lowercaseMap: new Map([['game (europe)', 'Game (Europe)']]),
       };
 
       const result = manifest.findMatch(entry, 'Game (USA)');
@@ -655,7 +640,7 @@ describe('sanitizeFilename', () => {
 
 describe('hasInvalidChars', () => {
   it('returns true for filenames with invalid chars', () => {
-    expect(hasInvalidChars("Q*Bert")).toBe(true);
+    expect(hasInvalidChars('Q*Bert')).toBe(true);
     expect(hasInvalidChars('What?')).toBe(true);
     expect(hasInvalidChars('A/B')).toBe(true);
     expect(hasInvalidChars('C:D')).toBe(true);
@@ -712,7 +697,13 @@ describe('LibretroAdapter', () => {
 
   it('lookup returns null when not initialized', async () => {
     const result = await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Game (USA).zip', stem: 'Game (USA)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Game (USA).zip',
+        stem: 'Game (USA)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 3,
       mediaType: 'box-2D',
       regionPriority: ['us'],
@@ -728,7 +719,13 @@ describe('LibretroAdapter', () => {
     } as Response);
 
     const result = await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Game (USA).zip', stem: 'Game (USA)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Game (USA).zip',
+        stem: 'Game (USA)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 3,
       mediaType: 'box-2D',
       regionPriority: ['us'],
@@ -748,7 +745,13 @@ describe('LibretroAdapter', () => {
     } as unknown as Response);
 
     const result = await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Unknown Game (USA).zip', stem: 'Unknown Game (USA)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Unknown Game (USA).zip',
+        stem: 'Unknown Game (USA)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 3,
       mediaType: 'box-2D',
       regionPriority: ['us'],
@@ -768,7 +771,13 @@ describe('LibretroAdapter', () => {
     } as unknown as Response);
 
     const result = await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Super Mario Bros. (World).zip', stem: 'Super Mario Bros. (World)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Super Mario Bros. (World).zip',
+        stem: 'Super Mario Bros. (World)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 3,
       mediaType: 'box-2D',
       regionPriority: ['us'],
@@ -791,7 +800,13 @@ describe('LibretroAdapter', () => {
     } as unknown as Response);
 
     const result = await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Game (USA) (Proto).zip', stem: 'Game (USA) (Proto)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Game (USA) (Proto).zip',
+        stem: 'Game (USA) (Proto)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 3,
       mediaType: 'box-2D',
       regionPriority: ['us'],
@@ -844,7 +859,13 @@ describe('LibretroAdapter', () => {
     // Use unsupported system (9999) after caching manifest for system 3
     // First lookup to cache manifest for system 3
     await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Game (USA).zip', stem: 'Game (USA)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Game (USA).zip',
+        stem: 'Game (USA)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 3,
       mediaType: 'box-2D',
       regionPriority: ['us'],
@@ -852,7 +873,13 @@ describe('LibretroAdapter', () => {
 
     // Now try with unsupported system - manifest won't have it
     const result = await adapter.lookup({
-      rom: { path: '/test.zip', filename: 'Game (USA).zip', stem: 'Game (USA)', extension: '.zip', size: 1000 },
+      rom: {
+        path: '/test.zip',
+        filename: 'Game (USA).zip',
+        stem: 'Game (USA)',
+        extension: '.zip',
+        size: 1000,
+      },
       systemId: 9999, // Unsupported system
       mediaType: 'box-2D',
       regionPriority: ['us'],

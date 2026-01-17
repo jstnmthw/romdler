@@ -67,11 +67,7 @@ export class ScreenScraperAdapter implements ArtworkAdapter {
       return Promise.resolve(false);
     }
 
-    this.client = new ScreenScraperClient(
-      this.credentials,
-      this.rateLimitMs,
-      this.userAgent
-    );
+    this.client = new ScreenScraperClient(this.credentials, this.rateLimitMs, this.userAgent);
 
     this.initialized = true;
     return Promise.resolve(true);
@@ -109,11 +105,7 @@ export class ScreenScraperAdapter implements ArtworkAdapter {
       }
 
       // Select media URL based on preferences
-      const mediaUrl = selectMediaUrl(
-        gameResult.medias,
-        params.mediaType,
-        params.regionPriority
-      );
+      const mediaUrl = selectMediaUrl(gameResult.medias, params.mediaType, params.regionPriority);
 
       if (mediaUrl === null) {
         return {
@@ -146,9 +138,7 @@ export class ScreenScraperAdapter implements ArtworkAdapter {
 /**
  * Factory function to create ScreenScraper adapter
  */
-export function createScreenScraperAdapter(
-  options?: Record<string, unknown>
-): ArtworkAdapter {
+export function createScreenScraperAdapter(options?: Record<string, unknown>): ArtworkAdapter {
   if (options === undefined) {
     throw new Error('ScreenScraper adapter requires credentials options');
   }

@@ -1,10 +1,5 @@
 import type { ScreenScraperCredentials } from '../types.js';
-import type {
-  SSResponse,
-  SSMedia,
-  GameLookupResult,
-  LookupParams,
-} from './types.js';
+import type { SSResponse, SSMedia, GameLookupResult, LookupParams } from './types.js';
 
 const API_BASE_URL = 'https://api.screenscraper.fr/api2';
 const SOFTWARE_NAME = 'romdler';
@@ -45,11 +40,7 @@ export class ScreenScraperClient {
   private rateLimiter: RateLimiter;
   private userAgent: string;
 
-  constructor(
-    credentials: ScreenScraperCredentials,
-    rateLimitMs: number,
-    userAgent: string
-  ) {
+  constructor(credentials: ScreenScraperCredentials, rateLimitMs: number, userAgent: string) {
     this.credentials = credentials;
     this.rateLimiter = new RateLimiter(rateLimitMs);
     this.userAgent = userAgent;

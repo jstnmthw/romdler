@@ -1,8 +1,4 @@
-export {
-  downloadFile,
-  downloadSequential,
-  downloadConcurrent,
-} from './downloader.js';
+export { downloadFile, downloadSequential, downloadConcurrent } from './downloader.js';
 export type {
   DownloadOptions,
   DownloadResult,

@@ -17,7 +17,12 @@ export type {
 } from './types.js';
 
 // Scanner utilities
-export { scanForRoms, getImgsDirectory, findExistingImage, filterRomsWithExistingImages } from './scanner.js';
+export {
+  scanForRoms,
+  getImgsDirectory,
+  findExistingImage,
+  filterRomsWithExistingImages,
+} from './scanner.js';
 
 // Hasher utility
 export { calculateCRC32, calculateCRC32Batch } from './hasher.js';

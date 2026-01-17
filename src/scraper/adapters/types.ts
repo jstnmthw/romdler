@@ -106,6 +106,4 @@ export type AdapterSourceConfig = {
 };
 
 /** Factory function to create adapter instances */
-export type AdapterFactory = (
-  options?: Record<string, unknown>
-) => ArtworkAdapter;
+export type AdapterFactory = (options?: Record<string, unknown>) => ArtworkAdapter;

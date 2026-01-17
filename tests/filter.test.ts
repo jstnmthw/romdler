@@ -24,10 +24,7 @@ describe('parseFilterExpression', () => {
   });
 
   it('parses mixed AND/OR expressions', () => {
-    expect(parseFilterExpression(['foo AND bar', 'baz'])).toEqual([
-      ['foo', 'bar'],
-      ['baz'],
-    ]);
+    expect(parseFilterExpression(['foo AND bar', 'baz'])).toEqual([['foo', 'bar'], ['baz']]);
   });
 
   it('handles case-insensitive AND keyword', () => {
@@ -84,11 +81,11 @@ describe('matchesExpression', () => {
 
   it('matches complex expression: (foo AND bar) OR baz', () => {
     const expr = parseFilterExpression(['foo AND bar', 'baz']);
-    expect(matchesExpression('foobar', expr)).toBe(true);    // matches foo AND bar
-    expect(matchesExpression('bazqux', expr)).toBe(true);    // matches baz
-    expect(matchesExpression('foo', expr)).toBe(false);       // foo alone doesn't match
-    expect(matchesExpression('bar', expr)).toBe(false);       // bar alone doesn't match
-    expect(matchesExpression('qux', expr)).toBe(false);       // no match
+    expect(matchesExpression('foobar', expr)).toBe(true); // matches foo AND bar
+    expect(matchesExpression('bazqux', expr)).toBe(true); // matches baz
+    expect(matchesExpression('foo', expr)).toBe(false); // foo alone doesn't match
+    expect(matchesExpression('bar', expr)).toBe(false); // bar alone doesn't match
+    expect(matchesExpression('qux', expr)).toBe(false); // no match
   });
 });
 

@@ -65,9 +65,7 @@ export class AdapterRegistry {
    * @param configs Source configurations
    */
   getEnabledAdapters(configs: AdapterSourceConfig[]): ArtworkAdapter[] {
-    const enabledConfigs = configs
-      .filter((c) => c.enabled)
-      .sort((a, b) => a.priority - b.priority);
+    const enabledConfigs = configs.filter((c) => c.enabled).sort((a, b) => a.priority - b.priority);
 
     const adapters: ArtworkAdapter[] = [];
 
@@ -86,9 +84,7 @@ export class AdapterRegistry {
    * @param configs Source configurations
    * @returns Map of adapter ID to initialization success
    */
-  async initializeAll(
-    configs: AdapterSourceConfig[]
-  ): Promise<Map<string, boolean>> {
+  async initializeAll(configs: AdapterSourceConfig[]): Promise<Map<string, boolean>> {
     const results = new Map<string, boolean>();
     const adapters = this.getEnabledAdapters(configs);
 

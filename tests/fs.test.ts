@@ -1,13 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  ensureDir,
-  fileExists,
-  getFileSize,
-  atomicMove,
-  safeDelete,
-} from '../src/utils/index.js';
+import { ensureDir, fileExists, getFileSize, atomicMove, safeDelete } from '../src/utils/index.js';
 
 const TEST_DIR = join(process.cwd(), '.test-fs');
 

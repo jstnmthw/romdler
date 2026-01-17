@@ -86,10 +86,7 @@ export class LibretroAdapter implements ArtworkAdapter {
     }
 
     // Get manifest for this system/media type
-    const manifestData = await this.manifest.getManifest(
-      params.systemId,
-      params.mediaType
-    );
+    const manifestData = await this.manifest.getManifest(params.systemId, params.mediaType);
 
     if (manifestData === null) {
       return { found: false };
@@ -106,11 +103,7 @@ export class LibretroAdapter implements ArtworkAdapter {
     }
 
     // Build the download URL
-    const mediaUrl = this.manifest.buildUrl(
-      params.systemId,
-      params.mediaType,
-      matchResult.match
-    );
+    const mediaUrl = this.manifest.buildUrl(params.systemId, params.mediaType, matchResult.match);
 
     if (mediaUrl === null) {
       return { found: false };
@@ -135,9 +128,7 @@ export class LibretroAdapter implements ArtworkAdapter {
 /**
  * Factory function to create Libretro adapter
  */
-export function createLibretroAdapter(
-  options?: Record<string, unknown>
-): ArtworkAdapter {
+export function createLibretroAdapter(options?: Record<string, unknown>): ArtworkAdapter {
   return new LibretroAdapter({
     userAgent: (options?.['userAgent'] as string) ?? undefined,
     timeoutMs: (options?.['timeoutMs'] as number) ?? undefined,

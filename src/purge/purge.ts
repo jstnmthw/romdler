@@ -17,10 +17,7 @@ export type PurgeOptions = {
  * @param blacklist - Blacklist filter strings
  * @returns Files that match the blacklist (should be deleted)
  */
-function findBlacklistedFiles(
-  files: PurgeFileEntry[],
-  blacklist: string[]
-): PurgeFileEntry[] {
+function findBlacklistedFiles(files: PurgeFileEntry[], blacklist: string[]): PurgeFileEntry[] {
   if (blacklist.length === 0) {
     return [];
   }
@@ -105,7 +102,9 @@ async function deleteFiles(files: PurgeFileEntry[]): Promise<PurgeResult[]> {
     if (result.status === 'deleted') {
       console.log(`${prefix} ${chalk.red('x')} ${result.file.filename}`);
     } else {
-      console.log(`${prefix} ${chalk.red('!')} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`);
+      console.log(
+        `${prefix} ${chalk.red('!')} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`
+      );
     }
   }
 
@@ -115,10 +114,7 @@ async function deleteFiles(files: PurgeFileEntry[]): Promise<PurgeResult[]> {
 /**
  * Calculate summary from purge results
  */
-function calculateSummary(
-  totalScanned: number,
-  results: PurgeResult[]
-): PurgeSummary {
+function calculateSummary(totalScanned: number, results: PurgeResult[]): PurgeSummary {
   return {
     totalScanned,
     matchedBlacklist: results.length,
@@ -149,10 +145,7 @@ function printSummary(summary: PurgeSummary): void {
  * @param options - Purge options
  * @returns Array of purge results
  */
-export async function runPurge(
-  config: Config,
-  options: PurgeOptions
-): Promise<PurgeResult[]> {
+export async function runPurge(config: Config, options: PurgeOptions): Promise<PurgeResult[]> {
   const downloadDir = path.resolve(config.downloadDir);
 
   printHeader(downloadDir, options.dryRun);

@@ -136,11 +136,7 @@ export class Renderer {
   /**
    * Updates the download progress.
    */
-  downloadProgress(
-    progress: DownloadProgress,
-    currentIndex: number,
-    totalFiles: number
-  ): void {
+  downloadProgress(progress: DownloadProgress, currentIndex: number, totalFiles: number): void {
     if (this.logLevel === 'silent' || !this.isTTY) {
       return;
     }
@@ -192,7 +188,9 @@ export class Renderer {
       `[${(index + 1).toString().padStart(String(total).length)}/${total}]`
     );
 
-    console.log(`${statusIcon} ${chalk.cyan(decodeForDisplay(result.filename))} ${statusText} ${counter}`);
+    console.log(
+      `${statusIcon} ${chalk.cyan(decodeForDisplay(result.filename))} ${statusText} ${counter}`
+    );
   }
 
   /**

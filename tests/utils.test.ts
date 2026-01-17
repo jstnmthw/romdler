@@ -13,9 +13,7 @@ describe('resolveUrl', () => {
   const baseUrl = 'https://example.com/roms/snes/';
 
   it('resolves relative URL', () => {
-    expect(resolveUrl('mario.zip', baseUrl)).toBe(
-      'https://example.com/roms/snes/mario.zip'
-    );
+    expect(resolveUrl('mario.zip', baseUrl)).toBe('https://example.com/roms/snes/mario.zip');
   });
 
   it('resolves relative URL with path', () => {
@@ -25,15 +23,11 @@ describe('resolveUrl', () => {
   });
 
   it('resolves parent directory path', () => {
-    expect(resolveUrl('../nes/game.zip', baseUrl)).toBe(
-      'https://example.com/roms/nes/game.zip'
-    );
+    expect(resolveUrl('../nes/game.zip', baseUrl)).toBe('https://example.com/roms/nes/game.zip');
   });
 
   it('preserves absolute URL', () => {
-    expect(resolveUrl('https://other.com/file.zip', baseUrl)).toBe(
-      'https://other.com/file.zip'
-    );
+    expect(resolveUrl('https://other.com/file.zip', baseUrl)).toBe('https://other.com/file.zip');
   });
 
   it('handles URL-encoded characters', () => {
@@ -54,15 +48,11 @@ describe('extractFilename', () => {
   });
 
   it('extracts filename with special characters', () => {
-    expect(extractFilename('https://example.com/path/file%20name.zip')).toBe(
-      'file name.zip'
-    );
+    expect(extractFilename('https://example.com/path/file%20name.zip')).toBe('file name.zip');
   });
 
   it('handles URL with query string', () => {
-    expect(extractFilename('https://example.com/path/file.zip?v=1')).toBe(
-      'file.zip'
-    );
+    expect(extractFilename('https://example.com/path/file.zip?v=1')).toBe('file.zip');
   });
 
   it('returns index for trailing slash', () => {
@@ -114,9 +104,7 @@ describe('resolveAndExtract', () => {
   });
 
   it('throws on invalid URL', () => {
-    expect(() => resolveAndExtract('file.zip', 'not-a-valid-url')).toThrow(
-      'Invalid URL'
-    );
+    expect(() => resolveAndExtract('file.zip', 'not-a-valid-url')).toThrow('Invalid URL');
   });
 });
 
@@ -220,7 +208,7 @@ describe('sanitizeFilename', () => {
   it('handles special URL-encoded characters', () => {
     // Test various URL-encoded characters
     expect(sanitizeFilename('file%26name.zip')).toBe('file&name.zip'); // &
-    expect(sanitizeFilename('file%23tag.zip')).toBe('file#tag.zip');   // #
+    expect(sanitizeFilename('file%23tag.zip')).toBe('file#tag.zip'); // #
   });
 
   it('handles failed URL decoding gracefully', () => {

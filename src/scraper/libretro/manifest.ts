@@ -16,12 +16,12 @@ const LIBRETRO_CDN_BASE = 'https://thumbnails.libretro.com';
 /** Media type to folder name mapping */
 const MEDIA_TYPE_FOLDERS: Record<string, string> = {
   'box-2D': 'Named_Boxarts',
-  'boxart': 'Named_Boxarts',
-  'ss': 'Named_Snaps',
-  'snap': 'Named_Snaps',
-  'screenshot': 'Named_Snaps',
-  'sstitle': 'Named_Titles',
-  'title': 'Named_Titles',
+  boxart: 'Named_Boxarts',
+  ss: 'Named_Snaps',
+  snap: 'Named_Snaps',
+  screenshot: 'Named_Snaps',
+  sstitle: 'Named_Titles',
+  title: 'Named_Titles',
 };
 
 /** GitHub Tree API response */
@@ -441,7 +441,9 @@ function extractBaseTitle(filename: string): string | null {
  */
 function extractRegion(filename: string): string | null {
   // Look for common region patterns
-  const regionMatch = filename.match(/\((USA|World|Europe|Japan|Japan,\s*USA|USA,\s*Europe)[^)]*\)/i);
+  const regionMatch = filename.match(
+    /\((USA|World|Europe|Japan|Japan,\s*USA|USA,\s*Europe)[^)]*\)/i
+  );
   return regionMatch !== null ? regionMatch[1]!.toLowerCase() : null;
 }
 
@@ -482,9 +484,10 @@ let manifestInstance: LibretroManifest | null = null;
 /**
  * Get the shared manifest instance.
  */
-export function getManifestInstance(
-  options?: { userAgent?: string; timeoutMs?: number }
-): LibretroManifest {
+export function getManifestInstance(options?: {
+  userAgent?: string;
+  timeoutMs?: number;
+}): LibretroManifest {
   if (manifestInstance === null) {
     manifestInstance = new LibretroManifest(options);
   }

@@ -36,10 +36,7 @@ export async function getFileSize(filePath: string): Promise<number | null> {
  * Atomically moves a file from source to destination.
  * Creates the destination directory if it doesn't exist.
  */
-export async function atomicMove(
-  sourcePath: string,
-  destPath: string
-): Promise<void> {
+export async function atomicMove(sourcePath: string, destPath: string): Promise<void> {
   await ensureDir(dirname(destPath));
   await rename(sourcePath, destPath);
 }
