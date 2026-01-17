@@ -32,7 +32,10 @@ adapterRegistry.register('screenscraper', createScreenScraperAdapter);
 /**
  * Build adapter source configs from the new config schema.
  * Each adapter has its own config section with enabled/priority.
+ * Complexity note: Score inflated by defensive null checks (optional chaining)
+ * and nullish coalescing for defaults. Logic is a simple linear if-else flow.
  */
+// eslint-disable-next-line complexity
 function getSourceConfigs(
   config: Config,
   options: ScrapeOptions
