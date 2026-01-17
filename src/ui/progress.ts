@@ -138,3 +138,60 @@ export class ProgressBar {
 export function createProgressBar(): ProgressBar {
   return new ProgressBar();
 }
+
+/**
+ * Options for rendering a progress bar string.
+ */
+export type ProgressBarStringOptions = {
+  filename: string;
+  bytesDownloaded: number;
+  totalBytes: number | null;
+  startTime: number;
+  fileIndex: number;
+  totalFiles: number;
+  barWidth?: number;
+};
+
+/**
+ * Renders a progress bar as a string for use in scrolling log displays.
+ * Returns a formatted string like: "filename.zip |████░░░░| 50% | 5.2 MB/10.4 MB | 1.2 MB/s | 1/5"
+ */
+export function renderProgressBarString(options: ProgressBarStringOptions): string {
+  const {
+    filename,
+    bytesDownloaded,
+    totalBytes,
+    startTime,
+    fileIndex,
+    totalFiles,
+    barWidth = 20,
+  } = options;
+
+  // Truncate filename
+  const truncated = truncateFilename(decodeForDisplay(filename), 40);
+
+  // Calculate percentage
+  const percentage =
+    totalBytes !== null && totalBytes > 0 ? Math.round((bytesDownloaded / totalBytes) * 100) : 0;
+
+  // Build progress bar
+  const filledWidth = totalBytes !== null && totalBytes > 0
+    ? Math.round((bytesDownloaded / totalBytes) * barWidth)
+    : 0;
+  const emptyWidth = barWidth - filledWidth;
+  const bar = '\u2588'.repeat(filledWidth) + '\u2591'.repeat(emptyWidth);
+
+  // Format sizes
+  const downloadedStr = formatBytes(bytesDownloaded);
+  const totalStr = totalBytes !== null ? formatBytes(totalBytes) : '?';
+
+  // Calculate speed
+  const elapsed = (Date.now() - startTime) / 1000;
+  const speed = elapsed > 0 ? bytesDownloaded / elapsed : 0;
+  const speedStr = formatSpeed(speed);
+
+  // File progress
+  const fileProgress = `${fileIndex + 1}/${totalFiles}`;
+
+  return `${chalk.cyan(truncated)} |${chalk.green(bar)}| ${percentage}% | ${downloadedStr}/${totalStr} | ${speedStr} | ${fileProgress}`;
+}

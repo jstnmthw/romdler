@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseFilterExpression,
   matchesExpression,
+  matchesExpressionLower,
   applyFilters,
   createFilterFn,
 } from '../src/filter/index.js';
@@ -86,6 +87,24 @@ describe('matchesExpression', () => {
     expect(matchesExpression('foo', expr)).toBe(false); // foo alone doesn't match
     expect(matchesExpression('bar', expr)).toBe(false); // bar alone doesn't match
     expect(matchesExpression('qux', expr)).toBe(false); // no match
+  });
+});
+
+describe('matchesExpressionLower', () => {
+  it('returns false for empty expression', () => {
+    expect(matchesExpressionLower('test', [])).toBe(false);
+  });
+
+  it('matches single term (pre-lowercased)', () => {
+    const expr = parseFilterExpression(['FOO']);
+    expect(matchesExpressionLower('foobar', expr)).toBe(true);
+    expect(matchesExpressionLower('bar', expr)).toBe(false);
+  });
+
+  it('matches AND expression (pre-lowercased)', () => {
+    const expr = parseFilterExpression(['foo AND bar']);
+    expect(matchesExpressionLower('foobar', expr)).toBe(true);
+    expect(matchesExpressionLower('foo only', expr)).toBe(false);
   });
 });
 

@@ -18,6 +18,8 @@ export interface ScrapeResult {
   status: 'downloaded' | 'skipped' | 'not_found' | 'failed';
   /** Path to downloaded image (if successful) */
   imagePath?: string;
+  /** Downloaded image size in bytes (if downloaded) */
+  imageSize?: number;
   /** CRC32 hash calculated for the ROM */
   crc?: string;
   /** Game name from source (if found) */

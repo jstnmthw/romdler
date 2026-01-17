@@ -7,6 +7,8 @@ export interface FileEntry {
   filename: string;
   /** Link text (visible text in the anchor) */
   linkText: string;
+  /** Expected file size in bytes (from HTML table, if available) */
+  expectedSize?: number;
 }
 
 export interface DownloadResult {

@@ -15,20 +15,45 @@ import {
 import type { DownloadOptions, DownloadResult, ProgressCallback } from './types.js';
 
 /**
+ * Checks if two file sizes match within a tolerance.
+ * HTML displays rounded sizes (e.g., "155.7 KiB"), so exact match is unlikely.
+ * We allow 1% tolerance to account for display rounding.
+ */
+function sizesMatch(size1: number, size2: number): boolean {
+  if (size1 === size2) {
+    return true;
+  }
+  const tolerance = Math.max(size1, size2) * 0.01; // 1% tolerance
+  return Math.abs(size1 - size2) <= tolerance;
+}
+
+/**
  * Checks if a file already exists and should be skipped.
+ * Uses expectedSize (from HTML manifest) when available to avoid HTTP requests.
  */
 async function checkExistingFile(
   url: string,
   destPath: string,
   options: DownloadOptions,
-  filename: string
+  filename: string,
+  expectedSize?: number
 ): Promise<DownloadResult | null> {
   const existingSize = await getFileSize(destPath);
   if (existingSize === null) {
+    return null; // File doesn't exist locally
+  }
+
+  // If we have expected size from the HTML manifest, use it (no HTTP request needed!)
+  // Use tolerance because HTML displays rounded sizes (e.g., "155.7 KiB")
+  if (expectedSize !== undefined) {
+    if (sizesMatch(existingSize, expectedSize)) {
+      return { filename, url, status: 'skipped', bytesDownloaded: 0 };
+    }
+    // Size mismatch beyond tolerance - proceed to download
     return null;
   }
 
-  // File exists - check Content-Length if possible
+  // No expected size available - fall back to HTTP Content-Length check
   try {
     const { contentLength, body } = await fetchStream(url, {
       userAgent: options.userAgent,
@@ -53,12 +78,14 @@ async function checkExistingFile(
 /**
  * Downloads a file to the specified directory using streaming.
  * Uses atomic write pattern: download to temp file, then rename on success.
+ * @param expectedSize - Expected file size from HTML manifest (avoids HTTP size check if provided)
  */
 export async function downloadFile(
   url: string,
   filename: string,
   options: DownloadOptions,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  expectedSize?: number
 ): Promise<DownloadResult> {
   const destPath = safePath(options.downloadDir, filename);
   const tempPath = join(dirname(destPath), tempFilename(filename));
@@ -67,8 +94,8 @@ export async function downloadFile(
     // Ensure download directory exists
     await ensureDir(options.downloadDir);
 
-    // Check if file already exists
-    const skipResult = await checkExistingFile(url, destPath, options, filename);
+    // Check if file already exists (uses expectedSize to avoid HTTP request if available)
+    const skipResult = await checkExistingFile(url, destPath, options, filename, expectedSize);
     if (skipResult !== null) {
       return skipResult;
     }
@@ -150,7 +177,7 @@ export async function downloadFile(
  * Downloads multiple files sequentially.
  */
 export async function downloadSequential(
-  files: Array<{ url: string; filename: string }>,
+  files: Array<{ url: string; filename: string; expectedSize?: number }>,
   options: DownloadOptions,
   onProgress?: ProgressCallback,
   onFileComplete?: (result: DownloadResult, index: number, total: number) => void
@@ -163,7 +190,13 @@ export async function downloadSequential(
       continue;
     }
 
-    const result = await downloadFile(file.url, file.filename, options, onProgress);
+    const result = await downloadFile(
+      file.url,
+      file.filename,
+      options,
+      onProgress,
+      file.expectedSize
+    );
     results.push(result);
 
     if (onFileComplete !== undefined) {
@@ -178,7 +211,7 @@ export async function downloadSequential(
  * Downloads multiple files with limited concurrency.
  */
 export async function downloadConcurrent(
-  files: Array<{ url: string; filename: string }>,
+  files: Array<{ url: string; filename: string; expectedSize?: number }>,
   options: DownloadOptions,
   concurrency: number,
   onFileComplete?: (result: DownloadResult, index: number, total: number) => void
@@ -197,7 +230,13 @@ export async function downloadConcurrent(
         continue;
       }
 
-      const result = await downloadFile(file.url, file.filename, options);
+      const result = await downloadFile(
+        file.url,
+        file.filename,
+        options,
+        undefined,
+        file.expectedSize
+      );
       results[currentIndex] = result;
       completedCount++;
 

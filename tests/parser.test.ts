@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseTableLinks, filterZipLinks } from '../src/parser/index.js';
+import { parseTableLinks, filterZipLinks, parseFileSize } from '../src/parser/index.js';
 
 const sampleHtml = `
 <table id="list">
@@ -151,5 +151,97 @@ describe('filterZipLinks', () => {
     ];
     const result = filterZipLinks(links);
     expect(result).toEqual([]);
+  });
+});
+
+describe('parseFileSize', () => {
+  it('parses KiB values', () => {
+    expect(parseFileSize('155.7 KiB')).toBe(Math.round(155.7 * 1024));
+    expect(parseFileSize('320.7 KiB')).toBe(Math.round(320.7 * 1024));
+    expect(parseFileSize('1 KiB')).toBe(1024);
+  });
+
+  it('parses MiB values', () => {
+    expect(parseFileSize('1.5 MiB')).toBe(Math.round(1.5 * 1024 * 1024));
+    expect(parseFileSize('100 MiB')).toBe(100 * 1024 * 1024);
+  });
+
+  it('parses GiB values', () => {
+    expect(parseFileSize('2.5 GiB')).toBe(Math.round(2.5 * 1024 * 1024 * 1024));
+  });
+
+  it('parses KB and MB (treats as binary)', () => {
+    expect(parseFileSize('100 KB')).toBe(100 * 1024);
+    expect(parseFileSize('50 MB')).toBe(50 * 1024 * 1024);
+  });
+
+  it('parses plain bytes', () => {
+    expect(parseFileSize('500 B')).toBe(500);
+    expect(parseFileSize('1024')).toBe(1024);
+  });
+
+  it('handles whitespace', () => {
+    expect(parseFileSize('  155.7 KiB  ')).toBe(Math.round(155.7 * 1024));
+    expect(parseFileSize('100KiB')).toBe(100 * 1024);
+  });
+
+  it('returns undefined for invalid values', () => {
+    expect(parseFileSize('-')).toBeUndefined();
+    expect(parseFileSize('')).toBeUndefined();
+    expect(parseFileSize('invalid')).toBeUndefined();
+    expect(parseFileSize('abc MB')).toBeUndefined();
+  });
+
+  it('returns undefined for NaN values', () => {
+    // '..' matches the number regex but parseFloat returns NaN
+    expect(parseFileSize('.. KiB')).toBeUndefined();
+  });
+
+  it('returns undefined for unknown units', () => {
+    // PiB (petabytes) is not a supported unit
+    expect(parseFileSize('100 PiB')).toBeUndefined();
+    expect(parseFileSize('100 XB')).toBeUndefined();
+  });
+
+  it('is case insensitive', () => {
+    expect(parseFileSize('100 kib')).toBe(100 * 1024);
+    expect(parseFileSize('100 KIB')).toBe(100 * 1024);
+    expect(parseFileSize('100 mib')).toBe(100 * 1024 * 1024);
+  });
+});
+
+describe('parseTableLinks with sizes', () => {
+  it('extracts file sizes from td.size column', () => {
+    const result = parseTableLinks(sampleHtml, 'list');
+    const marioLink = result.links.find((l) => l.href === 'mario.zip');
+    expect(marioLink?.size).toBe(Math.round(155.7 * 1024));
+
+    const zeldaLink = result.links.find((l) => l.href === 'zelda.zip');
+    expect(zeldaLink?.size).toBe(Math.round(320.7 * 1024));
+  });
+
+  it('returns undefined size when td.size is missing', () => {
+    const html = `
+      <table id="list">
+        <tr>
+          <td class="link"><a href="file.zip">file.zip</a></td>
+        </tr>
+      </table>
+    `;
+    const result = parseTableLinks(html, 'list');
+    expect(result.links[0]?.size).toBeUndefined();
+  });
+
+  it('returns undefined size for placeholder values', () => {
+    const html = `
+      <table id="list">
+        <tr>
+          <td class="link"><a href="file.zip">file.zip</a></td>
+          <td class="size">-</td>
+        </tr>
+      </table>
+    `;
+    const result = parseTableLinks(html, 'list');
+    expect(result.links[0]?.size).toBeUndefined();
   });
 });

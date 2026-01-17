@@ -1,5 +1,6 @@
 import path from 'path';
-import type { Config } from '../config/schema.js';
+import type { Config, ResolvedSystemConfig } from '../config/schema.js';
+import { resolveSystemConfig } from '../config/schema.js';
 import type { RomFile, ScrapeResult, ScrapeOptions } from './types.js';
 import { scanForRoms, getImgsDirectory, findExistingImage } from './scanner.js';
 import { calculateCRC32 } from './hasher.js';
@@ -12,7 +13,7 @@ import {
   renderDryRunList,
   calculateSummary,
 } from './reporter.js';
-import { printScraperBanner, printScraperDryRunBanner } from '../ui/index.js';
+import { printScraperBanner, printScraperDryRunBanner, ProgressRenderer } from '../ui/index.js';
 import chalk from 'chalk';
 
 // Adapter imports
@@ -112,12 +113,8 @@ function needsHashCalculation(sourceConfigs: AdapterSourceConfig[]): boolean {
 }
 
 /**
- * Main scraper orchestrator.
- * Complexity note: Sequential orchestrator with validation, scanning, filtering, processing,
- * and reporting phases. Splitting would fragment a linear workflow into artificial
- * abstractions without improving readability. Adapter pattern adds necessary extensibility.
+ * Main scraper orchestrator - processes all systems in config.
  */
-// eslint-disable-next-line complexity
 export async function runScraper(config: Config, options: ScrapeOptions): Promise<ScrapeResult[]> {
   // Print banner
   if (options.dryRun) {
@@ -127,19 +124,9 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   }
 
   const startTime = Date.now();
-  const results: ScrapeResult[] = [];
+  const allResults: ScrapeResult[] = [];
 
-  // Validate system ID
-  if (config.scraper?.systemId === undefined || config.scraper.systemId === null) {
-    throw new Error('System ID not configured. Add scraper.systemId to your config file.');
-  }
-
-  const systemId = config.scraper.systemId;
-  const mediaType = options.mediaType ?? config.scraper.mediaType;
-  const regionPriority = options.regionPriority ?? config.scraper.regionPriority;
-  const skipExisting = !options.force && config.scraper.skipExisting;
-
-  // Build source configurations
+  // Build source configurations (shared across all systems)
   const sourceConfigs = getSourceConfigs(config, options);
 
   if (sourceConfigs.length === 0) {
@@ -159,8 +146,46 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   // Log active sources
   const sourceNames = initializedSources.map((s) => s.id).join(', ');
   console.log(chalk.white.bold(`Sources: ${chalk.cyan(sourceNames)}`));
+  console.log('');
 
-  // Prefetch manifests for adapters that support it (fail fast on errors)
+  // Process each system
+  for (const systemConfig of config.systems) {
+    const system = resolveSystemConfig(systemConfig, config);
+    const results = await scrapeSystem(system, config, options, initializedSources);
+    allResults.push(...results);
+  }
+
+  // Print overall summary
+  const elapsedMs = Date.now() - startTime;
+  const summary = calculateSummary(allResults, elapsedMs);
+  console.log(renderScrapeSummary(summary, '(multiple directories)'));
+
+  return allResults;
+}
+
+/**
+ * Scrape artwork for a single system.
+ * Complexity note: Sequential orchestrator with validation, scanning, filtering, processing,
+ * and reporting phases. Splitting would fragment a linear workflow into artificial
+ * abstractions without improving readability. Adapter pattern adds necessary extensibility.
+ */
+// eslint-disable-next-line complexity
+async function scrapeSystem(
+  system: ResolvedSystemConfig,
+  config: Config,
+  options: ScrapeOptions,
+  initializedSources: AdapterSourceConfig[]
+): Promise<ScrapeResult[]> {
+  const results: ScrapeResult[] = [];
+  const systemId = system.systemId;
+
+  console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
+
+  const mediaType = options.mediaType ?? config.scraper?.mediaType ?? 'box-2D';
+  const regionPriority = options.regionPriority ?? config.scraper?.regionPriority ?? ['us', 'wor', 'eu', 'jp'];
+  const skipExisting = !options.force && (config.scraper?.skipExisting ?? true);
+
+  // Prefetch manifests for adapters that support it
   for (const source of initializedSources) {
     const adapter = adapterRegistry.get(source.id, source.options);
     if (adapter?.prefetch !== undefined) {
@@ -172,7 +197,7 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   const extensions = getExtensionsForSystem(systemId);
 
   // Scan for ROMs
-  const downloadDir = path.resolve(config.downloadDir);
+  const downloadDir = path.resolve(system.downloadDir);
   const imgsDir = getImgsDirectory(downloadDir);
 
   console.log(chalk.white.bold(`Directory: ${chalk.cyan(downloadDir)}`));
@@ -232,6 +257,9 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   const totalToProcess = romsToProcess.length;
   const alreadySkipped = results.length;
 
+  // Use ProgressRenderer for scrolling log effect
+  const renderer = new ProgressRenderer({ maxLines: 8 });
+
   for (let i = 0; i < romsToProcess.length; i++) {
     const rom = romsToProcess[i]!;
     const result = await processRom(
@@ -246,13 +274,11 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
     );
 
     results.push(result);
-    console.log(renderScrapeResult(result, alreadySkipped + i, alreadySkipped + totalToProcess));
+    const line = renderScrapeResult(result, alreadySkipped + i, alreadySkipped + totalToProcess);
+    renderer.addLine(line);
   }
 
-  // Print summary
-  const elapsedMs = Date.now() - startTime;
-  const summary = calculateSummary(results, elapsedMs);
-  console.log(renderScrapeSummary(summary, imgsDir));
+  renderer.done();
 
   return results;
 }
@@ -336,6 +362,7 @@ async function processRom(
       gameName: result.gameName,
       source: adapterId,
       imagePath: downloadResult.path,
+      imageSize: downloadResult.size,
       bestEffort: result.bestEffort,
     };
   } catch (err) {

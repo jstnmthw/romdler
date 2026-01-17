@@ -4,21 +4,32 @@ Downloads cover art for your files using multiple sources with fallback support.
 
 ## Quick Start
 
-Add to your `app.config.json`:
+The scraper processes all systems defined in your `app.config.json`. Each system uses a shortcode that automatically maps to the correct system name and ID:
 
 ```json
 {
-  "scraper": {
-    "enabled": true,
-    "systemId": 10
-  }
+  "downloadDir": "./downloads/roms",
+  "systems": [
+    {
+      "system": "gbc",
+      "url": "https://example.com/roms/gbc"
+    },
+    {
+      "system": "snes",
+      "url": "https://example.com/roms/snes"
+    }
+  ]
 }
 ```
+
+The folder name defaults to the system shortcode (e.g., `gbc`, `snes`). You can override it with an explicit `folder` field if needed.
 
 Run:
 ```bash
 pnpm start -- scrape
 ```
+
+The scraper will process each system in order, downloading artwork to the `Imgs/` subdirectory of each system's folder. Libretro is used by default (no config needed).
 
 ## Sources
 
@@ -128,44 +139,39 @@ Scrape Summary
 
 ## Configuration
 
-### Common Options
+### System Shortcodes
 
-These apply to all adapters:
+Use shortcodes in the `system` field. Each shortcode automatically maps to the correct system name and ID. See the main [README.md](../../README.md#system-shortcodes) for the complete list.
+
+### Scraper Options
+
+The scraper uses sensible defaults. Only configure what you want to change:
 
 ```json
 {
   "scraper": {
-    "enabled": true,
-    "systemId": 10,
-    "mediaType": "box-2D",
-    "regionPriority": ["us", "wor", "eu", "jp"],
-    "skipExisting": true,
-    "resize": {
-      "enabled": false,
-      "maxWidth": 300,
-      "maxHeight": 300
-    }
+    "mediaType": "ss",
+    "regionPriority": ["jp", "us", "eu"]
   }
 }
 ```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable artwork downloading |
-| `systemId` | `number` | (required) | System ID for platform identification |
 | `mediaType` | `string` | `"box-2D"` | Media type to download |
 | `regionPriority` | `string[]` | `["us","wor","eu","jp"]` | Region preference order |
 | `skipExisting` | `boolean` | `true` | Skip files that already have images |
-| `resize` | `object` | - | Image resize options |
+| `resize` | `object` | `{ enabled: false }` | Image resize options |
 
 ### Libretro Configuration
+
+Libretro is **enabled by default** with priority 1. No configuration needed unless you want to disable it:
 
 ```json
 {
   "scraper": {
     "libretro": {
-      "enabled": true,
-      "priority": 1
+      "enabled": false
     }
   }
 }
@@ -178,19 +184,19 @@ These apply to all adapters:
 
 ### ScreenScraper Configuration
 
+ScreenScraper is **disabled by default**. Enable it with credentials for fallback when Libretro doesn't find a match:
+
 ```json
 {
   "scraper": {
     "screenscraper": {
       "enabled": true,
-      "priority": 2,
       "credentials": {
         "devId": "YOUR_DEV_ID",
         "devPassword": "YOUR_DEV_PASSWORD",
         "userId": "YOUR_USERNAME",
         "userPassword": "YOUR_PASSWORD"
-      },
-      "rateLimitMs": 1000
+      }
     }
   }
 }
@@ -211,13 +217,15 @@ These apply to all adapters:
 
 ### Resize Options
 
+Resize is **disabled by default**. Enable it to resize downloaded images:
+
 ```json
 {
   "scraper": {
     "resize": {
       "enabled": true,
-      "maxWidth": 300,
-      "maxHeight": 300
+      "maxWidth": 200,
+      "maxHeight": 200
     }
   }
 }
@@ -229,27 +237,24 @@ These apply to all adapters:
 | `maxWidth` | `number` | `300` | Maximum width in pixels (100-1000) |
 | `maxHeight` | `number` | `300` | Maximum height in pixels (100-1000) |
 
-## System IDs
+## System Shortcodes
 
-| System | ID | System | ID |
-|--------|-----|--------|-----|
-| Sega Mega Drive / Genesis | 1 | Sega Master System | 2 |
-| NES | 3 | SNES | 4 |
-| Sega Game Gear | 5 | Nintendo Game Boy | 9 |
-| Nintendo Game Boy Color | 10 | Nintendo Virtual Boy | 11 |
-| Nintendo Game Boy Advance | 12 | Nintendo 64 | 14 |
-| Sega 32X | 19 | Sega Mega-CD | 20 |
-| Sega Saturn | 22 | Sega Dreamcast | 23 |
-| Atari 2600 | 26 | Atari 7800 | 27 |
-| NEC PC Engine / TurboGrafx-16 | 31 | Atari Lynx | 43 |
-| Bandai WonderSwan | 45 | Bandai WonderSwan Color | 46 |
-| ColecoVision | 48 | Sony PlayStation | 57 |
-| Sony PSP | 58 | Commodore 64 | 66 |
-| MAME | 75 | SNK Neo Geo Pocket Color | 82 |
-| Nintendo DS | 106 | NEC PC Engine CD | 114 |
-| Mattel Intellivision | 115 | SNK Neo Geo | 142 |
+Shortcodes are designed to match **Anbernic folder names** for easy compatibility.
 
-See `screenscraper/systems.ts` for the complete list with ROM extensions.
+Common shortcodes:
+
+| Category | Shortcodes |
+|----------|------------|
+| **Nintendo** | `gb`, `gbc`, `gba`, `nds`, `vb`, `gw`, `poke`, `nes`/`fc`, `fds`, `snes`/`sfc`, `n64` |
+| **Sega** | `sms`, `gg`, `md`/`genesis`, `mdcd`/`scd`, `32x`, `saturn`, `dreamcast`/`dc`, `pico`, `naomi` |
+| **Sony** | `ps`/`psx`/`ps1`, `psp` |
+| **Atari** | `atari`/`2600`, `a5200`, `a7800`, `a800`, `lynx` |
+| **Arcade** | `mame`/`arcade`, `fbneo`, `hbmame`, `cps1`, `cps2`, `cps3`, `neogeo`, `atomiswave` |
+| **Other** | `pce`/`tg16`, `pcecd`, `ngp`/`ngpc`, `ws`/`wsc`, `coleco`, `msx`, `dos` |
+
+For the full list with all aliases, see [`src/systems/definitions.ts`](../systems/definitions.ts).
+
+For custom systems not in the registry, see `customSystems` in the main [README.md](../../README.md#custom-systems).
 
 ## Media Types
 

@@ -3,6 +3,8 @@ export interface ParsedLink {
   href: string;
   /** The visible text of the link */
   text: string;
+  /** File size in bytes (if available from the table) */
+  size?: number;
 }
 
 export interface ParseResult {

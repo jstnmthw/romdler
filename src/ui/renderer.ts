@@ -2,8 +2,10 @@ import chalk from 'chalk';
 import type { UrlStats, LogLevel } from '../types/index.js';
 import type { DownloadProgress, DownloadResult } from '../downloader/types.js';
 import { printBanner, printDryRunBanner } from './banner.js';
-import { ProgressBar } from './progress.js';
+import { formatBytes, renderProgressBarString } from './progress.js';
 import { renderUrlSummary, renderFinalSummary } from './summary.js';
+import { ScrollingLog } from './scrolling-log.js';
+import { StatusIcon, formatCounter } from './formatting.js';
 
 /**
  * Decodes URL encoding for human-readable display.
@@ -20,12 +22,15 @@ function decodeForDisplay(str: string): string {
 /**
  * Console UI renderer that owns all stdout writes.
  * Provides in-place updates for progress without spamming the terminal.
+ * Uses a scrolling log to show recent download results with progress bar below.
  */
 export class Renderer {
   private isTTY: boolean;
   private logLevel: LogLevel;
-  private progressBar: ProgressBar | null = null;
+  private scrollingLog: ScrollingLog | null = null;
+  private dryRunLog: ScrollingLog | null = null;
   private currentFileIndex: number = -1;
+  private downloadStartTime: number = 0;
 
   constructor(logLevel: LogLevel = 'info') {
     this.isTTY = process.stdout.isTTY === true;
@@ -135,62 +140,84 @@ export class Renderer {
 
   /**
    * Updates the download progress.
+   * Uses scrolling log with progress bar rendered as the bottom line.
    */
   downloadProgress(progress: DownloadProgress, currentIndex: number, totalFiles: number): void {
     if (this.logLevel === 'silent' || !this.isTTY) {
       return;
     }
 
-    // Start/restart progress bar for each new file
+    // Initialize scrolling log on first download
+    if (this.scrollingLog === null) {
+      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: false });
+    }
+
+    // Track new file start
     if (currentIndex !== this.currentFileIndex) {
-      if (this.progressBar !== null) {
-        this.progressBar.stop();
-      } else {
-        // Create progress bar once and reuse
-        this.progressBar = new ProgressBar();
-      }
-      this.progressBar.start(progress.filename, progress.totalBytes, currentIndex, totalFiles);
+      this.downloadStartTime = Date.now();
       this.currentFileIndex = currentIndex;
     }
 
-    this.progressBar?.update(progress.bytesDownloaded, progress.totalBytes);
+    // Render progress bar as string and set it on scrolling log
+    const progressLine = renderProgressBarString({
+      filename: progress.filename,
+      bytesDownloaded: progress.bytesDownloaded,
+      totalBytes: progress.totalBytes,
+      startTime: this.downloadStartTime,
+      fileIndex: currentIndex,
+      totalFiles,
+    });
+
+    this.scrollingLog.setProgress(progressLine);
   }
 
   /**
-   * Marks a download as complete and moves to next line.
+   * Marks a download as complete and adds to scrolling log.
+   * Shows file size in green for successful downloads.
    */
   downloadComplete(result: DownloadResult, index: number, total: number): void {
     if (this.logLevel === 'silent') {
       return;
     }
 
-    // Stop the progress bar before printing completion
-    if (this.progressBar !== null) {
-      this.progressBar.stop();
-      this.progressBar = null;
-    }
-
     const statusIcon =
       result.status === 'downloaded'
-        ? chalk.green('\u2714')
+        ? StatusIcon.success
         : result.status === 'skipped'
-          ? chalk.yellow('\u21B7')
-          : chalk.red('\u2718');
+          ? StatusIcon.skip
+          : StatusIcon.error;
 
+    // Show file size in green for downloads, status text for others
     const statusText =
       result.status === 'downloaded'
-        ? chalk.green('downloaded')
+        ? chalk.green(formatBytes(result.bytesDownloaded))
         : result.status === 'skipped'
           ? chalk.yellow('skipped')
           : chalk.red(`failed: ${result.error ?? 'unknown'}`);
 
-    const counter = chalk.gray(
-      `[${(index + 1).toString().padStart(String(total).length)}/${total}]`
-    );
+    const counter = formatCounter(index, total);
 
-    console.log(
-      `${statusIcon} ${chalk.cyan(decodeForDisplay(result.filename))} ${statusText} ${counter}`
-    );
+    const line = `${statusIcon} ${chalk.cyan(decodeForDisplay(result.filename))} ${statusText} ${counter}`;
+
+    // Add to scrolling log if active (TTY mode), otherwise just print
+    if (this.scrollingLog !== null && this.isTTY) {
+      this.scrollingLog.clearProgress();
+      this.scrollingLog.addLine(line);
+    } else {
+      console.log(line);
+    }
+  }
+
+  /**
+   * Finalizes the scrolling log display after all downloads complete.
+   * Call this when switching to summary output.
+   */
+  finishDownloads(): void {
+    if (this.scrollingLog !== null) {
+      this.scrollingLog.done();
+      this.scrollingLog = null;
+    }
+    this.currentFileIndex = -1;
   }
 
   /**
@@ -200,11 +227,35 @@ export class Renderer {
     if (this.logLevel === 'silent') {
       return;
     }
-    const counter = chalk.gray(
-      `[${(index + 1).toString().padStart(String(total).length)}/${total}]`
-    );
-    console.log(`  ${counter} ${chalk.cyan(decodeForDisplay(filename))}`);
-    this.debug(`       ${decodeForDisplay(url)}`);
+
+    // Initialize scrolling log for dry run on first file
+    if (this.dryRunLog === null && this.isTTY) {
+      this.dryRunLog = new ScrollingLog({ maxLines: 8, persistOnDone: false });
+    }
+
+    const counter = formatCounter(index, total);
+    const line = `  ${counter} ${chalk.cyan(decodeForDisplay(filename))}`;
+
+    if (this.dryRunLog !== null) {
+      this.dryRunLog.addLine(line);
+    } else {
+      console.log(line);
+    }
+
+    // Debug URL (only in non-TTY mode since scrolling log doesn't support multi-line per item)
+    if (this.dryRunLog === null) {
+      this.debug(`       ${decodeForDisplay(url)}`);
+    }
+  }
+
+  /**
+   * Finalizes dry run output.
+   */
+  finishDryRun(): void {
+    if (this.dryRunLog !== null) {
+      this.dryRunLog.done();
+      this.dryRunLog = null;
+    }
   }
 
   /**

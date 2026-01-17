@@ -1,8 +1,10 @@
 import path from 'path';
 import { readdir } from 'fs/promises';
 import chalk from 'chalk';
-import type { Config } from '../config/index.js';
+import type { Config, ResolvedSystemConfig } from '../config/index.js';
+import { resolveSystemConfig } from '../config/index.js';
 import { atomicMove, ensureDir } from '../utils/index.js';
+import { ProgressRenderer, StatusIcon, formatCounter } from '../ui/index.js';
 import type { DedupeRomFile, DedupeResult, DedupeSummary, RomGroup } from './types.js';
 import { parseRomFilename } from './parser.js';
 import { groupRomsBySignature, analyzeGroup, getGroupsWithDuplicates } from './grouper.js';
@@ -108,23 +110,26 @@ function printHeader(downloadDir: string, deletedDir: string, dryRun: boolean): 
 function printGroupDetails(groups: RomGroup[]): void {
   console.log('');
 
+  const renderer = new ProgressRenderer();
+
   for (const group of groups) {
-    console.log(chalk.white.bold(group.displayTitle));
+    renderer.addLine(chalk.white.bold(group.displayTitle));
 
     // Show kept files
     for (const file of group.toKeep) {
       const isPreferred = file === group.preferred;
       const suffix = isPreferred ? chalk.gray(' (preferred)') : '';
-      console.log(`  ${chalk.green('\u2713')} ${file.filename}${suffix}`);
+      renderer.addLine(`  ${StatusIcon.success} ${file.filename}${suffix}`);
     }
 
     // Show files to remove
     for (const file of group.toRemove) {
-      console.log(`  ${chalk.red('x')} ${file.filename}`);
+      renderer.addLine(`  ${StatusIcon.delete} ${file.filename}`);
     }
-
-    console.log('');
   }
+
+  renderer.done();
+  console.log('');
 }
 
 /**
@@ -165,6 +170,7 @@ async function moveFiles(groups: RomGroup[], deletedDir: string): Promise<Dedupe
   }
 
   const total = filesToRemove.length;
+  const renderer = new ProgressRenderer();
 
   for (let i = 0; i < filesToRemove.length; i++) {
     const file = filesToRemove[i];
@@ -175,16 +181,16 @@ async function moveFiles(groups: RomGroup[], deletedDir: string): Promise<Dedupe
     const result = await moveToDeleted(file, deletedDir);
     results.push(result);
 
-    const prefix = chalk.gray(`[${String(i + 1).padStart(String(total).length)}/${total}]`);
-    if (result.status === 'removed') {
-      console.log(`${prefix} ${chalk.yellow('\u2192')} ${result.file.filename}`);
-    } else {
-      console.log(
-        `${prefix} ${chalk.red('!')} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`
-      );
-    }
+    const counter = formatCounter(i, total);
+    const line =
+      result.status === 'removed'
+        ? `${counter} ${StatusIcon.arrow} ${result.file.filename}`
+        : `${counter} ${StatusIcon.warning} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`;
+
+    renderer.addLine(line);
   }
 
+  renderer.done();
   return results;
 }
 
@@ -274,13 +280,13 @@ function applyLimit(groups: RomGroup[], limit: number): RomGroup[] {
 }
 
 /**
- * Run the dedupe command
- * @param config - Application configuration
- * @param options - Dedupe options
- * @returns Array of dedupe results
+ * Run dedupe for a single system
  */
-export async function runDedupe(config: Config, options: DedupeOptions): Promise<DedupeResult[]> {
-  const downloadDir = path.resolve(config.downloadDir);
+async function dedupeSystem(
+  system: ResolvedSystemConfig,
+  options: DedupeOptions
+): Promise<DedupeResult[]> {
+  const downloadDir = path.resolve(system.downloadDir);
   const deletedDir = path.join(downloadDir, 'deleted');
 
   printHeader(downloadDir, deletedDir, options.dryRun);
@@ -299,7 +305,7 @@ export async function runDedupe(config: Config, options: DedupeOptions): Promise
   const groupedMap = groupRomsBySignature(files);
 
   // Analyze each group with user preferences
-  const preferences = config.dedupe;
+  const preferences = system.dedupe;
   const analyzedGroups: RomGroup[] = [];
   for (const [signature, groupFiles] of groupedMap) {
     analyzedGroups.push(analyzeGroup(signature, groupFiles, preferences));
@@ -351,4 +357,23 @@ export async function runDedupe(config: Config, options: DedupeOptions): Promise
   printSummary(summary);
 
   return results;
+}
+
+/**
+ * Run the dedupe command
+ * @param config - Application configuration
+ * @param options - Dedupe options
+ * @returns Array of dedupe results
+ */
+export async function runDedupe(config: Config, options: DedupeOptions): Promise<DedupeResult[]> {
+  const allResults: DedupeResult[] = [];
+
+  for (const systemConfig of config.systems) {
+    const system = resolveSystemConfig(systemConfig, config);
+    console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
+    const results = await dedupeSystem(system, options);
+    allResults.push(...results);
+  }
+
+  return allResults;
 }

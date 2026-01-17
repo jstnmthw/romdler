@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { ScrapeResult, ScrapeSummary } from './types.js';
+import { formatBytes } from '../ui/progress.js';
 
 /**
  * Format milliseconds into human-readable duration
@@ -83,13 +84,16 @@ export function renderScrapeResult(result: ScrapeResult, index: number, total: n
   const filename = result.rom.filename;
 
   switch (result.status) {
-    case 'downloaded':
+    case 'downloaded': {
+      const sizeStr =
+        result.imageSize !== undefined ? chalk.green(formatBytes(result.imageSize)) : '';
       if (result.bestEffort === true) {
-        // Best-effort match: show in amber with indication
-        return `${prefix} ${amber('~')} ${filename} ${chalk.gray('→')} ${amber(result.gameName ?? 'Unknown')} ${chalk.gray('(best effort)')}`;
+        // Best-effort match: show in amber with size
+        return `${prefix} ${amber('~')} ${filename} ${chalk.gray('→')} ${amber(result.gameName ?? 'Unknown')} ${sizeStr} ${chalk.gray('(best effort)')}`;
       }
-      // Exact match: show in green
-      return `${prefix} ${chalk.green('✓')} ${filename} ${chalk.gray('→')} ${chalk.cyan(result.gameName ?? 'Unknown')}`;
+      // Exact match: show in green with size
+      return `${prefix} ${chalk.green('✓')} ${filename} ${chalk.gray('→')} ${chalk.cyan(result.gameName ?? 'Unknown')} ${sizeStr}`;
+    }
 
     case 'skipped':
       return `${prefix} ${chalk.yellow('○')} ${filename} ${chalk.gray('(already exists)')}`;

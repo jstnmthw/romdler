@@ -84,6 +84,66 @@ describe('downloader', () => {
       expect(result.bytesDownloaded).toBe(0);
     });
 
+    it('skips existing file when expectedSize matches (no HTTP request)', async () => {
+      const content = 'existing content here';
+      writeFileSync(join(TEST_DIR, 'existing.zip'), content);
+
+      // Pass expectedSize - should skip without making HTTP request
+      const result = await downloadFile(
+        'https://example.com/existing.zip',
+        'existing.zip',
+        defaultOptions,
+        undefined,
+        content.length // expectedSize matches file size
+      );
+
+      expect(result.status).toBe('skipped');
+      expect(result.bytesDownloaded).toBe(0);
+      // No HTTP calls should be made
+      expect(mockFetchStream).not.toHaveBeenCalled();
+    });
+
+    it('skips existing file when expectedSize within 1% tolerance', async () => {
+      const content = 'a'.repeat(1000); // 1000 bytes
+      writeFileSync(join(TEST_DIR, 'existing.zip'), content);
+
+      // Pass expectedSize within 1% tolerance (1005 is within 1% of 1000)
+      const result = await downloadFile(
+        'https://example.com/existing.zip',
+        'existing.zip',
+        defaultOptions,
+        undefined,
+        1005 // Within 1% tolerance
+      );
+
+      expect(result.status).toBe('skipped');
+      expect(mockFetchStream).not.toHaveBeenCalled();
+    });
+
+    it('re-downloads when expectedSize differs beyond tolerance', async () => {
+      const existingContent = 'short';
+      const newContent = 'much longer content here';
+      writeFileSync(join(TEST_DIR, 'mismatch.zip'), existingContent);
+
+      mockFetchStream.mockResolvedValue({
+        body: createMockStream(newContent),
+        contentLength: newContent.length,
+        status: 200,
+      });
+
+      // Pass expectedSize that differs significantly from existing file
+      const result = await downloadFile(
+        'https://example.com/mismatch.zip',
+        'mismatch.zip',
+        defaultOptions,
+        undefined,
+        newContent.length // expectedSize doesn't match existing file
+      );
+
+      expect(result.status).toBe('downloaded');
+      expect(mockFetchStream).toHaveBeenCalledTimes(1);
+    });
+
     it('skips existing file when size check fails', async () => {
       const content = 'existing content';
       writeFileSync(join(TEST_DIR, 'existing.zip'), content);

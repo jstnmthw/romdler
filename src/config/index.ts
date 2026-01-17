@@ -1,2 +1,13 @@
 export { loadConfig } from './loader.js';
-export { configSchema, type Config, type DedupePreferences } from './schema.js';
+export {
+  configSchema,
+  resolveSystemConfig,
+  SYSTEM_REGISTRY,
+  getSystemInfo,
+  type Config,
+  type SystemConfig,
+  type SystemDefaults,
+  type CustomSystemDef,
+  type ResolvedSystemConfig,
+  type DedupePreferences,
+} from './schema.js';

@@ -1,5 +1,10 @@
 import { resolve } from 'node:path';
-import { loadConfig, type Config } from './config/index.js';
+import {
+  loadConfig,
+  resolveSystemConfig,
+  type Config,
+  type ResolvedSystemConfig,
+} from './config/index.js';
 import {
   parseArgs,
   type ScrapeCliArgs,
@@ -22,24 +27,24 @@ import { runPurge } from './purge/index.js';
 import { runDedupe } from './dedupe/index.js';
 import type { FileEntry, UrlStats } from './types/index.js';
 
-async function processUrl(
-  url: string,
+async function processSystem(
+  system: ResolvedSystemConfig,
   config: Config,
   renderer: Renderer,
   dryRun: boolean,
   limit?: number
 ): Promise<UrlStats> {
   const stats: UrlStats = {
-    url,
+    url: system.url,
     totalFound: 0,
     filtered: 0,
     downloaded: 0,
     skipped: 0,
     failed: 0,
-    downloadDir: resolve(config.downloadDir),
+    downloadDir: resolve(system.downloadDir),
   };
 
-  renderer.urlStart(url);
+  renderer.urlStart(system.url);
 
   // Fetch HTML page
   let html: string;
@@ -47,7 +52,7 @@ async function processUrl(
   let statusText: string;
 
   try {
-    const result = await fetchHtml(url, {
+    const result = await fetchHtml(system.url, {
       userAgent: config.userAgent,
       timeoutMs: config.requestTimeoutMs,
       retries: config.retries,
@@ -57,15 +62,15 @@ async function processUrl(
     statusText = result.statusText;
   } catch (err) {
     const message = isHttpError(err) ? err.message : 'Unknown error';
-    renderer.urlError(url, message);
+    renderer.urlError(system.url, message);
     return stats;
   }
 
   renderer.urlStatus(status, statusText);
 
   // Parse table
-  const parseResult = parseTableLinks(html, config.tableId);
-  renderer.tableFound(parseResult.tableFound, config.tableId);
+  const parseResult = parseTableLinks(html, system.tableId);
+  renderer.tableFound(parseResult.tableFound, system.tableId);
 
   if (!parseResult.tableFound) {
     return stats;
@@ -77,19 +82,20 @@ async function processUrl(
 
   // Build file entries with resolved URLs (single URL parse per link)
   const fileEntries: FileEntry[] = zipLinks.map((link) => {
-    const { url: resolvedUrl, filename: rawFilename } = resolveAndExtract(link.href, url);
+    const { url: resolvedUrl, filename: rawFilename } = resolveAndExtract(link.href, system.url);
     return {
       href: link.href,
       url: resolvedUrl,
       filename: sanitizeFilename(rawFilename),
       linkText: link.text,
+      expectedSize: link.size,
     };
   });
 
   // Apply whitelist/blacklist filters
   let filteredEntries = applyFilters(fileEntries, {
-    whitelist: config.whitelist,
-    blacklist: config.blacklist,
+    whitelist: system.whitelist,
+    blacklist: system.blacklist,
   });
   stats.filtered = filteredEntries.length;
 
@@ -111,6 +117,7 @@ async function processUrl(
     filteredEntries.forEach((entry, index) => {
       renderer.dryRunFile(entry.filename, entry.url, index, filteredEntries.length);
     });
+    renderer.finishDryRun();
     return stats;
   }
 
@@ -118,6 +125,7 @@ async function processUrl(
   const downloadList = filteredEntries.map((entry) => ({
     url: entry.url,
     filename: entry.filename,
+    expectedSize: entry.expectedSize,
   }));
 
   // Download files
@@ -144,7 +152,7 @@ async function processUrl(
     userAgent: config.userAgent,
     timeoutMs: config.requestTimeoutMs,
     retries: config.retries,
-    downloadDir: resolve(config.downloadDir),
+    downloadDir: resolve(system.downloadDir),
   };
 
   if (config.concurrency > 1) {
@@ -152,6 +160,9 @@ async function processUrl(
   } else {
     await downloadSequential(downloadList, downloadOptions, onProgress, onComplete);
   }
+
+  // Finalize scrolling log before summary
+  renderer.finishDownloads();
 
   return stats;
 }
@@ -165,9 +176,10 @@ async function runDownloadCommand(
   const allStats: UrlStats[] = [];
   let hasFailures = false;
 
-  // Process each URL
-  for (const url of config.urls) {
-    const stats = await processUrl(url, config, renderer, dryRun, limit);
+  // Process each system
+  for (const systemConfig of config.systems) {
+    const system = resolveSystemConfig(systemConfig, config);
+    const stats = await processSystem(system, config, renderer, dryRun, limit);
     allStats.push(stats);
     renderer.urlSummary(stats);
 
@@ -177,7 +189,7 @@ async function runDownloadCommand(
   }
 
   // Print final summary
-  if (config.urls.length > 1) {
+  if (config.systems.length > 1) {
     renderer.finalSummary(allStats);
   }
 

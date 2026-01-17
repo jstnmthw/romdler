@@ -1,8 +1,10 @@
 import path from 'path';
 import chalk from 'chalk';
-import type { Config } from '../config/index.js';
+import type { Config, ResolvedSystemConfig } from '../config/index.js';
+import { resolveSystemConfig } from '../config/index.js';
 import { parseFilterExpression, matchesExpression } from '../filter/index.js';
 import { safeDelete } from '../utils/index.js';
+import { ProgressRenderer, StatusIcon, formatCounter } from '../ui/index.js';
 import type { PurgeFileEntry, PurgeResult, PurgeSummary } from './types.js';
 import { scanDownloadDir } from './scanner.js';
 
@@ -71,9 +73,12 @@ function printHeader(downloadDir: string, dryRun: boolean): void {
  */
 function printDryRunPreview(files: PurgeFileEntry[]): PurgeResult[] {
   console.log(chalk.white('Files that would be deleted:'));
+
+  const renderer = new ProgressRenderer();
   for (const file of files) {
-    console.log(`  ${chalk.red('x')} ${file.filename}`);
+    renderer.addLine(`  ${StatusIcon.delete} ${file.filename}`);
   }
+  renderer.done();
   console.log('');
 
   return files.map((file) => ({
@@ -88,6 +93,7 @@ function printDryRunPreview(files: PurgeFileEntry[]): PurgeResult[] {
 async function deleteFiles(files: PurgeFileEntry[]): Promise<PurgeResult[]> {
   const results: PurgeResult[] = [];
   const total = files.length;
+  const renderer = new ProgressRenderer();
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -98,16 +104,16 @@ async function deleteFiles(files: PurgeFileEntry[]): Promise<PurgeResult[]> {
     const result = await deleteFile(file);
     results.push(result);
 
-    const prefix = chalk.gray(`[${String(i + 1).padStart(String(total).length)}/${total}]`);
-    if (result.status === 'deleted') {
-      console.log(`${prefix} ${chalk.red('x')} ${result.file.filename}`);
-    } else {
-      console.log(
-        `${prefix} ${chalk.red('!')} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`
-      );
-    }
+    const counter = formatCounter(i, total);
+    const line =
+      result.status === 'deleted'
+        ? `${counter} ${StatusIcon.delete} ${result.file.filename}`
+        : `${counter} ${StatusIcon.warning} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`;
+
+    renderer.addLine(line);
   }
 
+  renderer.done();
   return results;
 }
 
@@ -140,13 +146,13 @@ function printSummary(summary: PurgeSummary): void {
 }
 
 /**
- * Run the purge command
- * @param config - Application configuration
- * @param options - Purge options
- * @returns Array of purge results
+ * Run purge for a single system
  */
-export async function runPurge(config: Config, options: PurgeOptions): Promise<PurgeResult[]> {
-  const downloadDir = path.resolve(config.downloadDir);
+async function purgeSystem(
+  system: ResolvedSystemConfig,
+  options: PurgeOptions
+): Promise<PurgeResult[]> {
+  const downloadDir = path.resolve(system.downloadDir);
 
   printHeader(downloadDir, options.dryRun);
 
@@ -161,15 +167,15 @@ export async function runPurge(config: Config, options: PurgeOptions): Promise<P
   console.log(`${chalk.gray('Files found:')} ${chalk.white(files.length)}`);
 
   // Check for empty blacklist
-  if (config.blacklist.length === 0) {
+  if (system.blacklist.length === 0) {
     console.log(chalk.yellow('Blacklist is empty. No files to purge.'));
     return [];
   }
 
-  console.log(`${chalk.gray('Blacklist patterns:')} ${chalk.white(config.blacklist.length)}`);
+  console.log(`${chalk.gray('Blacklist patterns:')} ${chalk.white(system.blacklist.length)}`);
 
   // Find blacklisted files
-  let blacklistedFiles = findBlacklistedFiles(files, config.blacklist);
+  let blacklistedFiles = findBlacklistedFiles(files, system.blacklist);
 
   if (blacklistedFiles.length === 0) {
     console.log(chalk.green('No files match the blacklist.'));
@@ -198,4 +204,23 @@ export async function runPurge(config: Config, options: PurgeOptions): Promise<P
   printSummary(summary);
 
   return results;
+}
+
+/**
+ * Run the purge command
+ * @param config - Application configuration
+ * @param options - Purge options
+ * @returns Array of purge results
+ */
+export async function runPurge(config: Config, options: PurgeOptions): Promise<PurgeResult[]> {
+  const allResults: PurgeResult[] = [];
+
+  for (const systemConfig of config.systems) {
+    const system = resolveSystemConfig(systemConfig, config);
+    console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
+    const results = await purgeSystem(system, options);
+    allResults.push(...results);
+  }
+
+  return allResults;
 }

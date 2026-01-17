@@ -240,21 +240,35 @@ Unlike simple clean/variant detection, dedupe uses configurable preferences to *
 
 ### Configuration
 
-Add a `dedupe` section to your `app.config.json`:
+Dedupe uses sensible defaults out of the box. You only need to configure it if you want to customize the behavior.
+
+**Default behavior (no config needed):**
+- Region priority: USA > World > Europe > Japan
+- Avoids: Proto, Beta, Demo, Virtual Console, Retro-Bit, etc.
+- Tiebreaker: shortest filename wins
+
+**To customize**, add a `dedupe` section to `defaults` or per-system:
 
 ```json
 {
-  "dedupe": {
-    "regions": ["USA", "World", "Europe", "Japan"],
-    "avoid": [
-      "Proto", "Beta", "Sample", "Demo", "Rev", "Alt",
-      "Virtual Console", "Retro-Bit", "Pixel Heart",
-      "Switch Online", "GameCube", "Unl", "Pirate"
-    ],
-    "tiebreaker": "shortest"
-  }
+  "downloadDir": "./downloads/roms",
+  "defaults": {
+    "dedupe": {
+      "regions": ["Japan", "USA", "Europe"],
+      "tiebreaker": "alphabetical"
+    }
+  },
+  "systems": [
+    {
+      "system": "snes",
+      "url": "https://example.com/roms/snes",
+      "folder": "SNES"
+    }
+  ]
 }
 ```
+
+This example changes the region priority to prefer Japan releases and uses alphabetical tiebreaker.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -316,62 +330,115 @@ Create an `app.config.json` file in the project root:
 
 ```json
 {
-  "urls": [
-    "https://example.com/archive/roms/"
-  ],
-  "tableId": "list",
-  "downloadDir": "./downloads",
-  "whitelist": [],
-  "blacklist": [],
-  "concurrency": 1,
-  "userAgent": "Wget/1.21.2",
-  "requestTimeoutMs": 30000,
-  "retries": 2,
-  "logLevel": "info"
+  "downloadDir": "./downloads/roms",
+  "defaults": {
+    "whitelist": ["USA"]
+  },
+  "systems": [
+    {
+      "system": "gbc",
+      "url": "https://example.com/roms/gbc",
+      "folder": "GBC"
+    },
+    {
+      "system": "snes",
+      "url": "https://example.com/roms/snes",
+      "folder": "SNES",
+      "whitelist": ["USA", "World"]
+    }
+  ]
 }
 ```
 
-### Configuration Options
+That's it. Everything else uses sensible defaults (Libretro scraping, dedupe logic, concurrency, etc.).
+
+### Configuration Structure
+
+The config is organized into three main sections:
+
+1. **`downloadDir`** - Parent directory for all ROM folders
+2. **`defaults`** - Default settings that apply to all systems (can be overridden per-system)
+3. **`systems`** - Array of system configurations, each with its own shortcode, URL, and folder name
+4. **Global settings** - Settings that apply everywhere (concurrency, userAgent, retries, etc.)
+
+### System Configuration
+
+Each system in the `systems` array requires:
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `system` | `string` | Yes | System shortcode (e.g., `gbc`, `snes`, `psx`) - see [System Shortcodes](#system-shortcodes) |
+| `url` | `string` | Yes | Archive directory URL to process |
+| `folder` | `string` | No | Folder name within `downloadDir` (defaults to system shortcode) |
+| `tableId` | `string` | No | Override default table ID |
+| `whitelist` | `string[]` | No | Override default whitelist |
+| `blacklist` | `string[]` | No | Override default blacklist |
+| `dedupe` | `object` | No | Override default dedupe preferences |
+
+The final download path is computed as `{downloadDir}/{folder}` (e.g., `./downloads/roms/gbc`). If `folder` is not specified, it defaults to the system shortcode.
+
+### Default Settings
+
+Settings in `defaults` are inherited by all systems unless overridden:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `urls` | `string[]` | (required) | List of archive directory URLs to process |
-| `tableId` | `string` | (required) | HTML table ID containing the file list |
-| `downloadDir` | `string` | (required) | Directory to save downloaded files |
+| `tableId` | `string` | `"list"` | HTML table ID containing the file list |
 | `whitelist` | `string[]` | `[]` | Only download files matching these terms |
 | `blacklist` | `string[]` | `[]` | Exclude files matching these terms |
+| `dedupe` | `object` | (see defaults) | Dedupe preferences (see [Dedupe Command](#dedupe-command)) |
+
+### Global Settings
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
 | `concurrency` | `number` | `1` | Number of concurrent downloads (1-10) |
 | `userAgent` | `string` | `"Wget/1.21.2"` | User-Agent header for requests |
 | `requestTimeoutMs` | `number` | `30000` | Request timeout in milliseconds |
 | `retries` | `number` | `2` | Number of retry attempts for failed requests |
 | `logLevel` | `string` | `"info"` | Log level: `"debug"`, `"info"`, or `"silent"` |
 | `scraper` | `object` | `undefined` | Scraper configuration (see below) |
-| `dedupe` | `object` | `undefined` | Dedupe preferences (see [Dedupe Command](#dedupe-command)) |
 
 ### Scraper Configuration
 
 The scraper supports multiple sources with fallback. Libretro is enabled by default (no auth required). ScreenScraper can be enabled for better accuracy when Libretro doesn't find a match.
 
+**Note:** The system ID is determined automatically from the `system` shortcode. No need to specify it manually.
+
 For detailed configuration documentation, see [src/scraper/README.md](src/scraper/README.md).
 
 #### Minimal Configuration (Libretro Only)
 
+With system shortcodes, the scraper works with no additional config. Libretro is enabled by default:
+
 ```json
 {
-  "scraper": {
-    "enabled": true,
-    "systemId": 4
-  }
+  "downloadDir": "./downloads/roms",
+  "systems": [
+    {
+      "system": "snes",
+      "url": "https://example.com/roms/snes",
+      "folder": "SNES"
+    }
+  ]
 }
 ```
 
 #### With ScreenScraper Fallback
 
+Add ScreenScraper credentials to enable it as a fallback when Libretro doesn't find a match:
+
 ```json
 {
+  "downloadDir": "./downloads/roms",
+  "systems": [
+    {
+      "system": "snes",
+      "url": "https://example.com/roms/snes",
+      "folder": "SNES"
+    }
+  ],
   "scraper": {
-    "enabled": true,
-    "systemId": 4,
     "screenscraper": {
       "enabled": true,
       "credentials": {
@@ -385,12 +452,10 @@ For detailed configuration documentation, see [src/scraper/README.md](src/scrape
 }
 ```
 
-#### Common Options
+#### Scraper Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable artwork downloading |
-| `systemId` | `number` | (required) | System ID for platform identification |
 | `mediaType` | `string` | `"box-2D"` | Media type to download |
 | `regionPriority` | `string[]` | `["us","wor","eu","jp"]` | Region preference order |
 | `skipExisting` | `boolean` | `true` | Skip files that already have images |
@@ -398,18 +463,116 @@ For detailed configuration documentation, see [src/scraper/README.md](src/scrape
 | `libretro` | `object` | - | Libretro adapter config |
 | `screenscraper` | `object` | - | ScreenScraper adapter config |
 
-#### System IDs
+### System Shortcodes
 
-| System | ID | System | ID |
-|--------|-----|--------|-----|
-| NES | 3 | SNES | 4 |
-| Genesis/Mega Drive | 1 | Master System | 2 |
-| Game Boy | 9 | Game Boy Color | 10 |
-| Game Boy Advance | 12 | Nintendo 64 | 14 |
-| PlayStation | 57 | Dreamcast | 23 |
-| Neo Geo | 142 | MAME | 75 |
+Use these shortcodes in the `system` field. Each shortcode maps to a system name and ID automatically.
 
-See [src/scraper/README.md](src/scraper/README.md) for the full list and detailed adapter configuration
+Shortcodes are designed to match **Anbernic folder names** for easy compatibility.
+
+#### Nintendo
+
+| Shortcode | System | Aliases |
+|-----------|--------|---------|
+| `gb` | Game Boy | |
+| `gbc` | Game Boy Color | |
+| `gba` | Game Boy Advance | |
+| `nds` | Nintendo DS | |
+| `vb` | Virtual Boy | |
+| `gw` | Game & Watch | |
+| `poke` | Pokemon Mini | `pokemini` |
+| `nes` | NES | `fc` |
+| `fds` | Famicom Disk System | |
+| `snes` | SNES | `sfc` |
+| `n64` | Nintendo 64 | |
+
+#### Sega
+
+| Shortcode | System | Aliases |
+|-----------|--------|---------|
+| `sms` | Master System | |
+| `gg` | Game Gear | |
+| `md` | Mega Drive / Genesis | `genesis` |
+| `mdcd` | Mega CD | `scd`, `segacd` |
+| `32x` | 32X | |
+| `saturn` | Saturn | |
+| `dreamcast` | Dreamcast | `dc` |
+| `pico` | Sega PICO | |
+| `naomi` | Sega NAOMI | |
+
+#### Sony
+
+| Shortcode | System | Aliases |
+|-----------|--------|---------|
+| `ps` | PlayStation | `psx`, `ps1` |
+| `psp` | PSP | |
+
+#### Atari
+
+| Shortcode | System | Aliases |
+|-----------|--------|---------|
+| `atari` | Atari 2600 | `2600` |
+| `a5200` | Atari 5200 | `5200` |
+| `a7800` | Atari 7800 | `7800` |
+| `a800` | Atari 800 / 8-bit | |
+| `lynx` | Atari Lynx | |
+
+#### Arcade
+
+| Shortcode | System | Aliases |
+|-----------|--------|---------|
+| `mame` | MAME | `arcade` |
+| `fbneo` | FinalBurn Neo | |
+| `hbmame` | HBMAME | |
+| `cps1` | Capcom CPS1 | |
+| `cps2` | Capcom CPS2 | |
+| `cps3` | Capcom CPS3 | |
+| `neogeo` | SNK Neo Geo | |
+| `atomiswave` | Atomiswave | |
+
+#### Other
+
+| Shortcode | System | Aliases |
+|-----------|--------|---------|
+| `pce` | PC Engine / TurboGrafx-16 | `tg16` |
+| `pcecd` | PC Engine CD | |
+| `ngp` | Neo Geo Pocket / Color | `ngpc` |
+| `ws` | WonderSwan / Color | `wsc` |
+| `coleco` | ColecoVision | |
+| `intv` | Intellivision | |
+| `c64` | Commodore 64 | |
+| `msx` | MSX / MSX2 | |
+| `dos` | MS-DOS | |
+| `easyrpg` | EasyRPG | |
+| `openbor` | OpenBOR | |
+
+For the full list with all aliases, see [`src/systems/definitions.ts`](src/systems/definitions.ts).
+
+#### Custom Systems
+
+For systems not in the built-in registry, use `customSystems`:
+
+```json
+{
+  "downloadDir": "./downloads/roms",
+  "customSystems": {
+    "my-system": {
+      "name": "My Custom System",
+      "systemId": 999,
+      "extensions": [".rom", ".bin"]
+    }
+  },
+  "systems": [
+    {
+      "system": "my-system",
+      "url": "https://example.com/roms/custom"
+    }
+  ]
+}
+```
+
+Custom systems can also override built-in definitions if needed.
+
+See [src/scraper/README.md](src/scraper/README.md) for detailed adapter configuration
 
 ### Filtering
 
@@ -462,6 +625,9 @@ romdler/
 ├── src/
 │   ├── cli/          # CLI argument parsing
 │   ├── config/       # Configuration loading and validation
+│   ├── systems/      # System registry
+│   │   ├── definitions.ts # System shortcodes (edit this to add systems)
+│   │   └── registry.ts    # Lookup functions
 │   ├── http/         # HTTP fetching with retries
 │   ├── parser/       # HTML parsing with Cheerio
 │   ├── filter/       # Whitelist/blacklist filtering

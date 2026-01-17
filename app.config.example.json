@@ -1,55 +1,17 @@
 {
-  "urls": [
-    "https://example.com/roms/gbc"
-  ],
-  "tableId": "list",
-  "downloadDir": "./downloads/roms/GBC",
-  "whitelist": ["USA"],
-  "blacklist": [],
-  "concurrency": 1,
-  "userAgent": "Wget/1.21.2",
-  "requestTimeoutMs": 30000,
-  "retries": 2,
-  "logLevel": "info",
-  "dedupe": {
-    "regions": ["USA", "World", "Europe", "Japan"],
-    "avoid": [
-      "Proto", "Beta", "Sample", "Demo", "Preview", "Promo",
-      "Unl", "Pirate", "Aftermarket",
-      "Virtual Console", "Retro-Bit", "Pixel Heart", "RetroZone",
-      "Switch Online", "GameCube", "Wii U", "3DS", "NSO", "e-Reader",
-      "iam8bit", "Limited Run", "Arcade Archives", "Mini Console",
-      "Genesis Mini", "SNES Classic", "NES Classic",
-      "Capcom Classics", "Namco Museum", "Konami Collector",
-      "Anniversary Collection", "Mega Man Legacy", "Disney Classic",
-      "Rev", "Alt"
-    ],
-    "tiebreaker": "shortest"
+  "downloadDir": "./downloads/roms",
+  "defaults": {
+    "blacklist": ["BIOS"]
   },
-  "scraper": {
-    "systemId": 10,
-    "mediaType": "box-2D",
-    "regionPriority": ["us", "wor", "eu", "jp"],
-    "resize": {
-      "enabled": false,
-      "maxWidth": 300,
-      "maxHeight": 300
+  "systems": [
+    {
+      "system": "gbc",
+      "url": "https://example.com/roms/gbc"
     },
-    "skipExisting": true,
-    "libretro": {
-      "enabled": true,
-      "priority": 1
-    },
-    "screenscraper": {
-      "enabled": false,
-      "priority": 2,
-      "credentials": {
-        "devId": "YOUR_DEV_ID",
-        "devPassword": "YOUR_DEV_PASSWORD",
-        "userId": "YOUR_SCREENSCRAPER_USERNAME",
-        "userPassword": "YOUR_SCREENSCRAPER_PASSWORD"
-      },
-      "rateLimitMs": 1000
+    {
+      "system": "snes",
+      "url": "https://example.com/roms/snes",
+      "whitelist": ["USA", "World"]
     }
-  }
+  ]
 }
