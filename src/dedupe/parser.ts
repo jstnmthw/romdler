@@ -38,7 +38,7 @@ const VARIANT_PATTERNS = [
   // Dated builds
   /^\d{4}-\d{2}-\d{2}$/,
   /^\d{4}\.\d{2}\.\d{2}$/,
-  // Re-release platforms
+  // Re-release platforms and compilations
   /^Virtual\s+Console$/i,
   /^GameCube\s+Edition$/i,
   /^GameCube$/i,
@@ -46,6 +46,7 @@ const VARIANT_PATTERNS = [
   /^e-Reader$/i,
   /^iam8bit$/i,
   /^Retro-Bit$/i,
+  /^Retro-Bit\s+.+$/i, // Retro-Bit Generations, etc.
   /^Animal\s+Crossing$/i,
   /^Switch\s+Online$/i,
   /^Classic\s+NES\s+Series$/i,
@@ -54,6 +55,19 @@ const VARIANT_PATTERNS = [
   /^3DS\s+Virtual\s+Console$/i,
   /^Limited\s+Run$/i,
   /^Arcade\s+Archives$/i,
+  /^Capcom\s+Classics.*$/i, // Capcom Classics Mini Mix, etc.
+  /^Namco\s+Museum.*$/i,
+  /^Konami\s+Collector.*$/i,
+  /^SNK\s+Arcade\s+Classics.*$/i,
+  /^Anniversary\s+Collection.*$/i,
+  /^Collection\s+of\s+.+$/i,
+  /^Mega\s+Man\s+Legacy.*$/i,
+  /^Disney\s+Classic.*$/i,
+  /^Genesis\s+Mini$/i,
+  /^SNES\s+Classic$/i,
+  /^NES\s+Classic$/i,
+  /^Mini\s+Console$/i,
+  /^NSO$/i, // Nintendo Switch Online abbreviated
 ];
 
 /** Patterns for quality modifiers (preserve as part of identity) */
@@ -126,9 +140,31 @@ function isQualityModifier(token: string): boolean {
  * @param filename - ROM filename
  * @returns Array of tokens found in parentheses
  */
-function extractTokens(filename: string): string[] {
+function extractParenTokens(filename: string): string[] {
   const tokens: string[] = [];
   const regex = /\(([^)]+)\)/g;
+  let match = regex.exec(filename);
+
+  while (match !== null) {
+    const token = match[1];
+    if (token !== undefined) {
+      tokens.push(token.trim());
+    }
+    match = regex.exec(filename);
+  }
+
+  return tokens;
+}
+
+/**
+ * Extract square bracket tokens from a filename (e.g., [b], [!], [h])
+ * These are typically ROM status indicators in No-Intro/GoodTools naming
+ * @param filename - ROM filename
+ * @returns Array of tokens found in square brackets
+ */
+function extractBracketTokens(filename: string): string[] {
+  const tokens: string[] = [];
+  const regex = /\[([^\]]+)\]/g;
   let match = regex.exec(filename);
 
   while (match !== null) {
@@ -194,24 +230,35 @@ function createBaseSignature(
  */
 export function parseRomFilename(filename: string): ParsedRomName {
   const title = extractTitle(filename);
-  const tokens = extractTokens(filename);
+  const parenTokens = extractParenTokens(filename);
+  const bracketTokens = extractBracketTokens(filename);
 
   const regions: string[] = [];
   const qualityModifiers: string[] = [];
   const variantIndicators: string[] = [];
+  const extraTokens: string[] = [];
 
-  for (const token of tokens) {
+  // Process parenthetical tokens
+  for (const token of parenTokens) {
     if (isRegion(token)) {
       regions.push(token);
     } else if (isVariantIndicator(token)) {
       variantIndicators.push(token);
     } else if (isQualityModifier(token)) {
       qualityModifiers.push(token);
+    } else {
+      // Unrecognized tokens are tracked as extras (make file less preferred)
+      extraTokens.push(token);
     }
-    // Unrecognized tokens are ignored for grouping purposes
   }
 
-  const isClean = variantIndicators.length === 0;
+  // Square bracket tokens are always extras (ROM status indicators like [b], [!], [h])
+  for (const token of bracketTokens) {
+    extraTokens.push(`[${token}]`);
+  }
+
+  // A file is "clean" only if it has no variant indicators AND no extra tokens
+  const isClean = variantIndicators.length === 0 && extraTokens.length === 0;
   const baseSignature = createBaseSignature(title, regions, qualityModifiers);
 
   return {
@@ -220,6 +267,7 @@ export function parseRomFilename(filename: string): ParsedRomName {
     regions,
     qualityModifiers,
     variantIndicators,
+    extraTokens,
     isClean,
     baseSignature,
   };

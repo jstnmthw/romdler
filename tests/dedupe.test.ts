@@ -349,12 +349,112 @@ describe('dedupe/parser', () => {
       expect(result.filename).toBe(filename);
     });
 
-    it('ignores unrecognized tokens', () => {
+    it('tracks unrecognized tokens as extras', () => {
       const result = parseRomFilename('Game (USA) (Unknown Token).zip');
       expect(result.regions).toEqual(['USA']);
       expect(result.qualityModifiers).toEqual([]);
       expect(result.variantIndicators).toEqual([]);
-      expect(result.isClean).toBe(true);
+      expect(result.extraTokens).toEqual(['Unknown Token']);
+      expect(result.isClean).toBe(false); // Extra tokens make it not clean
+    });
+
+    it('tracks square bracket tokens as extras', () => {
+      const result = parseRomFilename('Game (USA) [b].zip');
+      expect(result.regions).toEqual(['USA']);
+      expect(result.extraTokens).toEqual(['[b]']);
+      expect(result.isClean).toBe(false);
+    });
+
+    it('detects Retro-Bit Generations as variant', () => {
+      const result = parseRomFilename('Game (USA) (Retro-Bit Generations).zip');
+      expect(result.variantIndicators).toContain('Retro-Bit Generations');
+      expect(result.isClean).toBe(false);
+    });
+
+    it('detects Capcom Classics Mini Mix as variant', () => {
+      const result = parseRomFilename('Game (USA) (Capcom Classics Mini Mix).zip');
+      expect(result.variantIndicators).toContain('Capcom Classics Mini Mix');
+      expect(result.isClean).toBe(false);
+    });
+
+    describe('extra tokens', () => {
+      it('tracks multiple unrecognized tokens', () => {
+        const result = parseRomFilename('Game (USA) (Foo) (Bar).zip');
+        expect(result.extraTokens).toEqual(['Foo', 'Bar']);
+        expect(result.isClean).toBe(false);
+      });
+
+      it('tracks multiple bracket tokens', () => {
+        const result = parseRomFilename('Game (USA) [b] [o1].zip');
+        expect(result.extraTokens).toContain('[b]');
+        expect(result.extraTokens).toContain('[o1]');
+        expect(result.isClean).toBe(false);
+      });
+
+      it('tracks common ROM status bracket codes', () => {
+        // [!] = verified good dump, [b] = bad dump, [h] = hack, [o] = overdump
+        const codes = ['!', 'b', 'h', 'o', 'a', 't', 'f', 'p'];
+        for (const code of codes) {
+          const result = parseRomFilename(`Game (USA) [${code}].zip`);
+          expect(result.extraTokens).toContain(`[${code}]`);
+        }
+      });
+
+      it('combines bracket and paren extra tokens', () => {
+        const result = parseRomFilename('Game (USA) (Unknown) [b].zip');
+        expect(result.extraTokens).toEqual(['Unknown', '[b]']);
+        expect(result.isClean).toBe(false);
+      });
+
+      it('has empty extraTokens for clean file', () => {
+        const result = parseRomFilename('Game (USA).zip');
+        expect(result.extraTokens).toEqual([]);
+        expect(result.isClean).toBe(true);
+      });
+
+      it('has empty extraTokens for file with only known modifiers', () => {
+        const result = parseRomFilename('Game (USA) (SGB Enhanced) (En,Fr).zip');
+        expect(result.extraTokens).toEqual([]);
+        expect(result.isClean).toBe(true);
+      });
+    });
+
+    describe('compilation and re-release variants', () => {
+      it('detects Genesis Mini as variant', () => {
+        const result = parseRomFilename('Game (USA) (Genesis Mini).zip');
+        expect(result.variantIndicators).toContain('Genesis Mini');
+        expect(result.isClean).toBe(false);
+      });
+
+      it('detects SNES Classic as variant', () => {
+        const result = parseRomFilename('Game (USA) (SNES Classic).zip');
+        expect(result.variantIndicators).toContain('SNES Classic');
+        expect(result.isClean).toBe(false);
+      });
+
+      it('detects NES Classic as variant', () => {
+        const result = parseRomFilename('Game (USA) (NES Classic).zip');
+        expect(result.variantIndicators).toContain('NES Classic');
+        expect(result.isClean).toBe(false);
+      });
+
+      it('detects Namco Museum as variant', () => {
+        const result = parseRomFilename('Game (USA) (Namco Museum Archives).zip');
+        expect(result.variantIndicators).toContain('Namco Museum Archives');
+        expect(result.isClean).toBe(false);
+      });
+
+      it('detects Mega Man Legacy as variant', () => {
+        const result = parseRomFilename('Game (USA) (Mega Man Legacy Collection).zip');
+        expect(result.variantIndicators).toContain('Mega Man Legacy Collection');
+        expect(result.isClean).toBe(false);
+      });
+
+      it('detects NSO abbreviated as variant', () => {
+        const result = parseRomFilename('Game (USA) (NSO).zip');
+        expect(result.variantIndicators).toContain('NSO');
+        expect(result.isClean).toBe(false);
+      });
     });
   });
 });
@@ -521,6 +621,62 @@ describe('dedupe/grouper', () => {
       expect(result.displayTitle).toBe('Unknown');
       expect(result.toRemove).toHaveLength(0);
       expect(result.toKeep).toHaveLength(0);
+    });
+
+    it('prefers file without extra tokens over file with extra tokens', () => {
+      // File with unrecognized token should be less preferred
+      const files = [
+        createRomFile('Game (USA) (Unknown Token).zip'), // Has extra token
+        createRomFile('Game (USA).zip'), // Clean
+      ];
+
+      const result = analyzeGroup('test', files);
+
+      expect(result.preferred?.filename).toBe('Game (USA).zip');
+      expect(result.toRemove).toHaveLength(1);
+      expect(result.toRemove[0]?.filename).toBe('Game (USA) (Unknown Token).zip');
+    });
+
+    it('prefers file without bracket tokens over file with bracket tokens', () => {
+      const files = [
+        createRomFile('Game (USA) [b].zip'), // Has bracket token
+        createRomFile('Game (USA).zip'), // Clean
+      ];
+
+      const result = analyzeGroup('test', files);
+
+      expect(result.preferred?.filename).toBe('Game (USA).zip');
+      expect(result.toRemove).toHaveLength(1);
+      expect(result.toRemove[0]?.filename).toBe('Game (USA) [b].zip');
+    });
+
+    it('removes compilation variants when clean exists', () => {
+      const files = [
+        createRomFile('Game (USA).zip'),
+        createRomFile('Game (USA) (Capcom Classics Mini Mix).zip'),
+        createRomFile('Game (USA) (Retro-Bit Generations).zip'),
+      ];
+
+      const result = analyzeGroup('test', files);
+
+      expect(result.preferred?.filename).toBe('Game (USA).zip');
+      expect(result.toRemove).toHaveLength(2);
+      expect(result.toKeep).toHaveLength(1);
+    });
+
+    it('keeps files with extra tokens when no clean version exists', () => {
+      // All files have extra tokens or variants
+      const files = [
+        createRomFile('Game (USA) [b].zip'),
+        createRomFile('Game (USA) (Beta).zip'),
+      ];
+
+      const result = analyzeGroup('test', files);
+
+      // No clean version, so keep all
+      expect(result.preferred).toBeNull();
+      expect(result.toRemove).toHaveLength(0);
+      expect(result.toKeep).toHaveLength(2);
     });
   });
 

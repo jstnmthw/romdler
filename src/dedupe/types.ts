@@ -10,7 +10,9 @@ export type ParsedRomName = {
   qualityModifiers: string[];
   /** Variant indicators that mark non-clean versions (e.g., ['Rev 1', 'Beta']) */
   variantIndicators: string[];
-  /** Whether this is a clean version (no variant indicators) */
+  /** Extra unrecognized tokens (make file less preferred) */
+  extraTokens: string[];
+  /** Whether this is a clean version (no variant indicators or extra tokens) */
   isClean: boolean;
   /** Base signature for grouping (title + regions + quality modifiers) */
   baseSignature: string;

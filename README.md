@@ -220,17 +220,38 @@ pnpm start -- dedupe --dry-run
 
 ### How It Works
 
-1. **Parses filenames** to extract title, regions, and variant indicators
+1. **Parses filenames** to extract title, regions, quality modifiers, variant indicators, and extra tokens
 2. **Groups files** by base signature (title + region + quality modifiers)
-3. **Identifies clean versions** (no Rev/Beta/Proto/dates/re-release platforms)
-4. **Moves variants** to `deleted/` only when a clean version exists
-5. **Keeps all files** if only variant versions exist (nothing to prefer)
+3. **Identifies clean versions** - files with NO variant indicators AND NO extra tokens
+4. **Prefers purest version** - files ending with just region tags like `(USA).zip` are preferred
+5. **Moves variants** to `deleted/` only when a clean version exists
+6. **Keeps all files** if only variant versions exist (nothing to prefer)
+
+### Clean File Detection
+
+A file is considered "clean" (the canonical original) when it has:
+- **No variant indicators** (Rev, Beta, Proto, etc.)
+- **No extra/unrecognized tokens** (unknown parenthetical tags)
+- **No bracket tokens** (`[b]`, `[h]`, `[!]`, etc.)
 
 ### Variant Indicators (moved when clean exists)
 
 - `(Rev X)`, `(Beta)`, `(Proto)`, `(Sample)`, `(Demo)` - Development versions
 - `(YYYY-MM-DD)` - Dated builds
 - `(Virtual Console)`, `(GameCube)`, `(Switch Online)` - Re-release platforms
+- `(Retro-Bit)`, `(iam8bit)`, `(Limited Run)` - Special editions
+- `(Capcom Classics)`, `(Namco Museum)`, `(Mega Man Legacy)` - Compilations
+- `(Genesis Mini)`, `(SNES Classic)`, `(NES Classic)` - Mini consoles
+
+### Extra Tokens (Bracket Tags)
+
+ROM status indicators in square brackets make a file less preferred:
+- `[b]` - Bad dump
+- `[h]` - Hack
+- `[!]` - Verified good dump
+- `[a]` - Alternate
+
+Unrecognized parenthetical tokens are also tracked as extra tokens.
 
 ### Quality Modifiers (preserved as identity)
 
@@ -242,10 +263,12 @@ pnpm start -- dedupe --dry-run
 
 **Input files:**
 ```
-Mega Man 4 (USA).zip              <- KEEP (clean)
-Mega Man 4 (USA) (Rev 1).zip      <- MOVE (variant)
-Mega Man 4 (USA) (Beta).zip       <- MOVE (variant)
-Sonic (USA) (Beta).zip            <- KEEP (no clean exists)
+Mega Man 4 (USA).zip                         <- KEEP (clean - only region)
+Mega Man 4 (USA) (Rev 1).zip                 <- MOVE (variant indicator)
+Mega Man 4 (USA) (Retro-Bit Generations).zip <- MOVE (compilation variant)
+Sonic (USA) (Beta).zip                       <- KEEP (no clean exists)
+Bionic Commando (USA).zip                    <- KEEP (clean)
+Bionic Commando (USA) (Capcom Classics) [b].zip <- MOVE (variant + bracket tag)
 ```
 
 **Output structure:**
@@ -253,9 +276,11 @@ Sonic (USA) (Beta).zip            <- KEEP (no clean exists)
 downloads/roms/snes/
 ├── Mega Man 4 (USA).zip
 ├── Sonic (USA) (Beta).zip
+├── Bionic Commando (USA).zip
 └── deleted/
     ├── Mega Man 4 (USA) (Rev 1).zip
-    └── Mega Man 4 (USA) (Beta).zip
+    ├── Mega Man 4 (USA) (Retro-Bit Generations).zip
+    └── Bionic Commando (USA) (Capcom Classics) [b].zip
 ```
 
 ### CLI Options (Dedupe)
