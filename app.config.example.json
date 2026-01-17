@@ -27,7 +27,6 @@
     "tiebreaker": "shortest"
   },
   "scraper": {
-    "enabled": true,
     "systemId": 10,
     "mediaType": "box-2D",
     "regionPriority": ["us", "wor", "eu", "jp"],

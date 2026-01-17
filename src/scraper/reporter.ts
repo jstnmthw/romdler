@@ -44,7 +44,7 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
   }
 
   if (summary.notFound > 0) {
-    lines.push(chalk.blue(`${summary.notFound} ROMs were not found in the ScreenScraper database.`));
+    lines.push(chalk.blue(`${summary.notFound} ROMs had no matching artwork found.`));
     lines.push('');
   }
 

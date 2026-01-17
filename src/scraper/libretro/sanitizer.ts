@@ -3,13 +3,13 @@
  *
  * According to the libretro-thumbnails specification, certain characters
  * in game names must be replaced with underscores in the filename:
- * &  *  /  :  <  >  ?  \  |  "
+ * &  *  /  :  `  <  >  ?  \  |  "
  *
  * Reference: https://github.com/libretro-thumbnails/libretro-thumbnails#naming-convention
  */
 
 /** Characters that must be replaced with underscore in Libretro filenames */
-const INVALID_CHARS = /[&*/:<>?\\|"]/g;
+const INVALID_CHARS = /[&*/:`<>?\\|"]/g;
 
 /**
  * Sanitize a ROM filename stem for use in Libretro thumbnail URLs.

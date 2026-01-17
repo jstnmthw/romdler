@@ -81,8 +81,6 @@ const dedupePreferencesSchema = z.object({
 
 /** Artwork scraper configuration schema */
 const scraperSchema = z.object({
-  /** Enable artwork downloading */
-  enabled: z.boolean().default(false),
   /** System ID for platform identification */
   systemId: z.number().int().min(1).optional(),
   /** Media type to download (box-2D, ss, sstitle, etc.) */
