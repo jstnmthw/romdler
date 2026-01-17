@@ -17,7 +17,7 @@ A Node.js CLI for downloading, organizing, artwork and deduplicating ROM collect
 - [Dedupe Command](#dedupe-command)
 - [Configuration](#configuration)
   - [Configuration Options](#configuration-options)
-  - [Artwork Configuration](#artwork-configuration)
+  - [Scraper Configuration](#artwork-configuration)
   - [Filtering](#filtering)
 - [Development](#development)
 - [Exit Codes](#exit-codes)
@@ -330,7 +330,7 @@ Create an `app.config.json` file in the project root:
 | `logLevel` | `string` | `"info"` | Log level: `"debug"`, `"info"`, or `"silent"` |
 | `scraper` | `object` | `undefined` | Scraper configuration (see below) |
 
-### Artwork Configuration
+### Scraper Configuration
 
 The artwork downloader supports multiple sources with fallback. Libretro is enabled by default (no auth required). ScreenScraper can be enabled for better accuracy when Libretro doesn't find a match.
 
