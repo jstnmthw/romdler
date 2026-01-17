@@ -2,6 +2,24 @@
 
 A Node.js CLI for downloading ZIP archives from directory listings and fetching box art for use with gaming frontends.
 
+> **Disclaimer:** This software is intended for use only when you have explicit authorization from the owner of the server or service to access and download content. Users are solely responsible for ensuring their use complies with applicable laws and terms of service. The authors are not liable for any misuse of this software.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Artwork Command](#artwork-command)
+- [Configuration](#configuration)
+  - [Configuration Options](#configuration-options)
+  - [Artwork Configuration](#artwork-configuration)
+  - [Filtering](#filtering)
+- [Development](#development)
+- [Exit Codes](#exit-codes)
+- [Security](#security)
+- [License](#license)
+
 ## Features
 
 ### Download Features
@@ -15,14 +33,15 @@ A Node.js CLI for downloading ZIP archives from directory listings and fetching 
 - Dry-run mode to preview downloads
 - Skip existing files (with optional size verification)
 
-### Scraper Features
-- Automatically download cover art for ROMs from ScreenScraper.fr
-- CRC32 hash-based ROM identification for accurate matching
+### Artwork Features
+- Download cover art from multiple sources with fallback support
+- Libretro Thumbnails: fast, no authentication required
+- ScreenScraper.fr: CRC32 hash-based matching for accuracy
 - Multiple media types: box art, screenshots, title screens, wheels
 - Region priority support (US, World, EU, JP)
 - Rate limiting to respect API limits
 - Skip existing images option
-- Dry-run mode to preview what would be scraped
+- Dry-run mode to preview downloads
 
 ## Requirements
 
@@ -83,11 +102,11 @@ pnpm start -- -c ./my-config.json
 
 ---
 
-## Scraper Command
+## Artwork Command
 
-The `scrape` command downloads cover art for your ROMs from ScreenScraper.fr.
+The `scrape` command downloads cover art for your files using multiple sources.
 
-### Basic Scraper Usage
+### Basic Usage
 
 ```bash
 # Scrape images for all ROMs in downloadDir
@@ -97,7 +116,7 @@ pnpm start -- scrape
 pnpm start -- scrape --dry-run
 ```
 
-### Scraper Options
+### Artwork Options
 
 ```bash
 # Limit to first N ROMs
@@ -115,7 +134,7 @@ pnpm start -- scrape --media sstitle   # Title screens
 pnpm start -- scrape --region us,wor,eu,jp
 ```
 
-### CLI Options (Scrape)
+### CLI Options (Artwork)
 
 | Option | Short | Description |
 |--------|-------|-------------|
@@ -126,7 +145,7 @@ pnpm start -- scrape --region us,wor,eu,jp
 | `--region <list>` | `-r <list>` | Region priority (comma-separated) |
 | `--config <path>` | `-c <path>` | Use custom config file path |
 
-### Scraper Output
+### Artwork Output
 
 Images are saved to an `Imgs/` subdirectory inside your `downloadDir`:
 
@@ -180,9 +199,9 @@ Create an `app.config.json` file in the project root:
 | `logLevel` | `string` | `"info"` | Log level: `"debug"`, `"info"`, or `"silent"` |
 | `scraper` | `object` | `undefined` | Scraper configuration (see below) |
 
-### Scraper Configuration
+### Artwork Configuration
 
-The scraper supports multiple artwork sources with a fallback chain. Sources are tried in priority order until artwork is found.
+The artwork downloader supports multiple sources with a fallback chain. Sources are tried in priority order until artwork is found.
 
 #### Available Sources
 
@@ -239,18 +258,27 @@ Use Libretro first, fall back to ScreenScraper for unmatched ROMs:
 }
 ```
 
-#### Scraper Options
+#### Artwork Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enabled` | `boolean` | `false` | Enable scraper functionality |
+| `enabled` | `boolean` | `false` | Enable artwork downloading |
 | `sources` | `array` | - | Artwork sources with priority (lower = tried first) |
 | `credentials` | `object` | - | ScreenScraper API credentials (required if using screenscraper) |
 | `systemId` | `number` | (required) | System ID for platform identification |
 | `mediaType` | `string` | `"box-2D"` | Media type to download |
 | `regionPriority` | `string[]` | `["us","wor","eu","jp"]` | Region preference order |
-| `skipExisting` | `boolean` | `true` | Skip ROMs that already have images |
+| `resize` | `object` | - | Image resize options (see below) |
+| `skipExisting` | `boolean` | `true` | Skip files that already have images |
 | `rateLimitMs` | `number` | `1000` | Delay between API requests (ms) |
+
+#### Resize Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Enable image resizing |
+| `maxWidth` | `number` | `300` | Maximum width in pixels (100-1000) |
+| `maxHeight` | `number` | `300` | Maximum height in pixels (100-1000) |
 
 #### System IDs
 
@@ -321,40 +349,6 @@ This matches files containing ("super" AND "mario") OR "zelda".
 
 **Blacklist precedence:** Blacklist always takes precedence over whitelist.
 
-## Console Output
-
-The app provides modern, colored console output:
-
-```
-╔════════════════════════════════════════════════════════╗
-║  Romdler v1.0.0                                 ║
-║  Archive ZIP file bulk downloader                      ║
-╚════════════════════════════════════════════════════════╝
-
-URL: https://example.com/archive/roms/
-  Status: 200 (OK)
-  ✔ Table "list" found
-  Files found: 500
-  After filtering: 123/500
-  Limited to: 10 files
-
-✔ mario.zip downloaded [  1/123]
-✔ zelda.zip downloaded [  2/123]
-↷ sonic.zip skipped [  3/123]
-...
-
-──────────────────────────────────────────────────────────
-Summary
-──────────────────────────────────────────────────────────
-  Total found:     500
-  Filtered:        123
-  Downloaded:      100
-  Skipped:         20
-  Failed:          3
-
-  Destination:     /home/user/downloads
-```
-
 ## Development
 
 ### Available Scripts
@@ -380,7 +374,7 @@ romdler/
 │   ├── parser/       # HTML parsing with Cheerio
 │   ├── filter/       # Whitelist/blacklist filtering
 │   ├── downloader/   # Streaming download logic
-│   ├── scraper/      # Artwork scraper
+│   ├── scraper/      # Artwork downloader
 │   │   ├── adapters/      # Adapter interface & registry
 │   │   ├── libretro/      # Libretro Thumbnails adapter
 │   │   ├── screenscraper/ # ScreenScraper API adapter
@@ -413,4 +407,4 @@ romdler/
 
 ## License
 
-MIT
+[MIT](LICENSE.md)

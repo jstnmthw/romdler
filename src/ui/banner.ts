@@ -11,8 +11,8 @@ ${chalk.cyan.bold('╚═══════════════════�
 `;
 }
 
-const DOWNLOAD_BANNER = createBanner('Archive directory downloader');
-const SCRAPER_BANNER = createBanner('Artwork scraper');
+const DOWNLOAD_BANNER = createBanner('Bulk ZIP downloader');
+const SCRAPER_BANNER = createBanner('Artwork downloader');
 
 export function printBanner(): void {
   console.log(DOWNLOAD_BANNER);
