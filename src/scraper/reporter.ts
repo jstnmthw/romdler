@@ -21,7 +21,7 @@ function formatDuration(ms: number): string {
 /**
  * Render scrape summary to console
  */
-export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): string {
+export function renderScrapeSummary(summary: ScrapeSummary): string {
   const boxWidth = 56;
   const title = 'Scrape Summary';
   const titlePadded = `  ${title}`.padEnd(boxWidth);
@@ -42,7 +42,6 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
     `  ${chalk.gray('Best effort:')}     ${summary.bestEffort > 0 ? chalk.hex('#FFA500')(summary.bestEffort) : chalk.white(summary.bestEffort)}`,
     `  ${chalk.gray('Failed:')}          ${summary.failed > 0 ? chalk.red(summary.failed) : chalk.white(summary.failed)}`,
     `  ${chalk.gray('Duration:')}        ${chalk.white(formatDuration(summary.elapsedMs))}`,
-    `  ${chalk.gray('Output:')}          ${chalk.cyan(imgsDir)}`,
     ''
   );
 

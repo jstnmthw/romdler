@@ -153,7 +153,7 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   // Print overall summary
   const elapsedMs = Date.now() - startTime;
   const summary = calculateSummary(allResults, elapsedMs);
-  console.log(renderScrapeSummary(summary, '(multiple directories)'));
+  console.log(renderScrapeSummary(summary));
 
   return allResults;
 }

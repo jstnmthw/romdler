@@ -56,16 +56,22 @@ async function deleteFile(file: PurgeFileEntry): Promise<PurgeResult> {
  * Print header for purge operation
  */
 function printHeader(downloadDir: string, dryRun: boolean): void {
+  const boxWidth = 56;
+  const title = 'Purge Blacklisted Files';
+  const titlePadded = `  ${title}`.padEnd(boxWidth);
+
   console.log('');
-  console.log(chalk.cyan.bold('Purge Blacklisted Files'));
-  console.log(chalk.gray('─'.repeat(40)));
+  console.log(chalk.cyan.bold(`╔${'═'.repeat(boxWidth)}╗`));
+  console.log(chalk.cyan.bold('║') + chalk.white.bold(titlePadded) + chalk.cyan.bold('║'));
+  console.log(chalk.cyan.bold(`╚${'═'.repeat(boxWidth)}╝`));
+  console.log('');
 
   if (dryRun) {
-    console.log(chalk.yellow.bold('[DRY RUN] No files will be deleted'));
+    console.log(chalk.yellow.bold('  [DRY RUN] No files will be deleted'));
     console.log('');
   }
 
-  console.log(`${chalk.gray('Directory:')} ${chalk.white(downloadDir)}`);
+  console.log(`  ${chalk.gray('Directory:')} ${chalk.white(downloadDir)}`);
 }
 
 /**
@@ -133,15 +139,19 @@ function calculateSummary(totalScanned: number, results: PurgeResult[]): PurgeSu
  * Print purge summary
  */
 function printSummary(summary: PurgeSummary): void {
+  const boxWidth = 56;
+  const title = 'Purge Summary';
+  const titlePadded = `  ${title}`.padEnd(boxWidth);
+
   console.log('');
-  console.log(chalk.gray('─'.repeat(40)));
-  console.log(chalk.white.bold('Summary'));
-  console.log(`  ${chalk.gray('Scanned:')}  ${chalk.white(summary.totalScanned)}`);
-  console.log(`  ${chalk.gray('Matched:')}  ${chalk.red(summary.matchedBlacklist)}`);
-  console.log(`  ${chalk.gray('Deleted:')}  ${chalk.red(summary.deleted)}`);
-  if (summary.failed > 0) {
-    console.log(`  ${chalk.gray('Failed:')}   ${chalk.red(summary.failed)}`);
-  }
+  console.log(chalk.cyan.bold(`╔${'═'.repeat(boxWidth)}╗`));
+  console.log(chalk.cyan.bold('║') + chalk.white.bold(titlePadded) + chalk.cyan.bold('║'));
+  console.log(chalk.cyan.bold(`╚${'═'.repeat(boxWidth)}╝`));
+  console.log('');
+  console.log(`  ${chalk.gray('Scanned:')}         ${chalk.white(summary.totalScanned)}`);
+  console.log(`  ${chalk.gray('Matched:')}         ${chalk.red(summary.matchedBlacklist)}`);
+  console.log(`  ${chalk.gray('Deleted:')}         ${chalk.red(summary.deleted)}`);
+  console.log(`  ${chalk.gray('Failed:')}          ${summary.failed > 0 ? chalk.red(summary.failed) : chalk.white(summary.failed)}`);
   console.log('');
 }
 
@@ -217,7 +227,6 @@ export async function runPurge(config: Config, options: PurgeOptions): Promise<P
 
   for (const systemConfig of config.systems) {
     const system = resolveSystemConfig(systemConfig, config);
-    console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
     const results = await purgeSystem(system, options);
     allResults.push(...results);
   }

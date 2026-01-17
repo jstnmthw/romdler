@@ -5,19 +5,21 @@ import type { UrlStats } from '../types/index.js';
  * Renders the summary statistics for a single URL.
  */
 export function renderUrlSummary(stats: UrlStats): string {
+  const boxWidth = 56;
+  const title = 'Download Summary';
+  const titlePadded = `  ${title}`.padEnd(boxWidth);
+
   const lines: string[] = [
     '',
-    chalk.cyan.bold('─'.repeat(50)),
-    chalk.white.bold('Summary'),
-    chalk.cyan.bold('─'.repeat(50)),
+    chalk.cyan.bold(`╔${'═'.repeat(boxWidth)}╗`),
+    chalk.cyan.bold('║') + chalk.white.bold(titlePadded) + chalk.cyan.bold('║'),
+    chalk.cyan.bold(`╚${'═'.repeat(boxWidth)}╝`),
+    '',
     `  ${chalk.gray('Total found:')}     ${chalk.white(stats.totalFound)}`,
     `  ${chalk.gray('Filtered:')}        ${chalk.white(stats.filtered)}`,
     `  ${chalk.gray('Downloaded:')}      ${chalk.green(stats.downloaded)}`,
     `  ${chalk.gray('Skipped:')}         ${chalk.yellow(stats.skipped)}`,
     `  ${chalk.gray('Failed:')}          ${stats.failed > 0 ? chalk.red(stats.failed) : chalk.white(stats.failed)}`,
-    '',
-    `  ${chalk.gray('Destination:')}     ${chalk.cyan(stats.downloadDir)}`,
-    '',
     '',
   ];
 
@@ -39,25 +41,24 @@ export function renderFinalSummary(allStats: UrlStats[]): string {
     { totalFound: 0, filtered: 0, downloaded: 0, skipped: 0, failed: 0 }
   );
 
+  const boxWidth = 56;
+  const title = 'Final Summary';
+  const titlePadded = `  ${title}`.padEnd(boxWidth);
+
   const lines: string[] = [
     '',
-    chalk.cyan.bold('═'.repeat(50)),
-    chalk.white.bold('Final Summary'),
-    chalk.cyan.bold('═'.repeat(50)),
+    chalk.cyan.bold(`╔${'═'.repeat(boxWidth)}╗`),
+    chalk.cyan.bold('║') + chalk.white.bold(titlePadded) + chalk.cyan.bold('║'),
+    chalk.cyan.bold(`╚${'═'.repeat(boxWidth)}╝`),
+    '',
     `  ${chalk.gray('URLs processed:')}  ${chalk.white(allStats.length)}`,
     `  ${chalk.gray('Total found:')}     ${chalk.white(totals.totalFound)}`,
     `  ${chalk.gray('Total filtered:')} ${chalk.white(totals.filtered)}`,
     `  ${chalk.gray('Downloaded:')}      ${chalk.green(totals.downloaded)}`,
     `  ${chalk.gray('Skipped:')}         ${chalk.yellow(totals.skipped)}`,
     `  ${chalk.gray('Failed:')}          ${totals.failed > 0 ? chalk.red(totals.failed) : chalk.white(totals.failed)}`,
-    chalk.cyan.bold('═'.repeat(50)),
     '',
   ];
-
-  if (totals.failed > 0) {
-    lines.push(chalk.red('Some downloads failed. Check the logs above for details.'));
-    lines.push('');
-  }
 
   return lines.join('\n');
 }

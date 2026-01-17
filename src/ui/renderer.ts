@@ -58,7 +58,7 @@ export class Renderer {
     if (this.logLevel === 'silent') {
       return;
     }
-    console.log(chalk.white.bold(`URL: ${chalk.cyan(decodeForDisplay(url))}`));
+    console.log(`  ${chalk.gray('URL:')} ${chalk.cyan(decodeForDisplay(url))}`);
   }
 
   /**
@@ -69,7 +69,7 @@ export class Renderer {
       return;
     }
     const statusColor = status >= 200 && status < 300 ? chalk.green : chalk.red;
-    console.log(`  Status: ${statusColor(`${status} (${statusText})`)}`);
+    console.log(`  ${chalk.gray('Status:')} ${statusColor(`${status} (${statusText})`)}`);
   }
 
   /**
@@ -80,9 +80,9 @@ export class Renderer {
       return;
     }
     if (found) {
-      console.log(`  ${chalk.green('\u2714')} Table "${tableId}" found`);
+      console.log(`  ${chalk.gray('Table:')} ${chalk.white(tableId)} ${chalk.green('✔')}`);
     } else {
-      console.log(`  ${chalk.red('\u2718')} Table "${tableId}" not found`);
+      console.log(`  ${chalk.gray('Table:')} ${chalk.white(tableId)} ${chalk.red('✗')}`);
     }
   }
 
@@ -93,11 +93,10 @@ export class Renderer {
     if (this.logLevel === 'silent') {
       return;
     }
-    console.log(`  Files found: ${chalk.white(totalFound)}`);
-    console.log(`  After filtering: ${chalk.cyan(`${filtered}/${totalFound}`)}`);
-    if (limit !== undefined && limit < filtered) {
-      console.log(`  Limited to: ${chalk.yellow(limit)} files`);
-    }
+    const filterText = limit !== undefined && limit < filtered
+      ? `${chalk.yellow(limit)}/${filtered}`
+      : `${chalk.white(filtered)}`;
+    console.log(`  ${chalk.gray('Found:')} ${chalk.white(totalFound)} files, ${chalk.gray('downloading:')} ${filterText}`);
     console.log('');
   }
 
@@ -139,6 +138,22 @@ export class Renderer {
   }
 
   /**
+   * Initializes the scrolling log area for downloads.
+   * Must be called after printing stats and before first download.
+   */
+  startDownloads(): void {
+    if (this.logLevel === 'silent' || !this.isTTY) {
+      return;
+    }
+    // Initialize scrolling log immediately to establish log-update's starting point
+    if (this.scrollingLog === null) {
+      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: true });
+      // Render initial placeholder to establish cursor position for log-update
+      this.scrollingLog.addLine(chalk.gray('Starting downloads...'));
+    }
+  }
+
+  /**
    * Updates the download progress.
    * Uses scrolling log with progress bar rendered as the bottom line.
    */
@@ -149,7 +164,7 @@ export class Renderer {
 
     // Initialize scrolling log on first download
     if (this.scrollingLog === null) {
-      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: false });
+      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: true });
     }
 
     // Track new file start
@@ -182,7 +197,7 @@ export class Renderer {
 
     // Initialize scrolling log on first file (may be skipped, so not in downloadProgress)
     if (this.scrollingLog === null && this.isTTY) {
-      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: false });
+      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: true });
     }
 
     const statusIcon =
@@ -235,7 +250,7 @@ export class Renderer {
 
     // Initialize scrolling log for dry run on first file
     if (this.dryRunLog === null && this.isTTY) {
-      this.dryRunLog = new ScrollingLog({ maxLines: 8, persistOnDone: false });
+      this.dryRunLog = new ScrollingLog({ maxLines: 8, persistOnDone: true });
     }
 
     const counter = formatCounter(index, total);

@@ -128,6 +128,9 @@ async function processSystem(
     expectedSize: entry.expectedSize,
   }));
 
+  // Initialize scrolling log area before downloads start
+  renderer.startDownloads();
+
   // Download files
   let currentIndex = 0;
 
