@@ -305,6 +305,66 @@ This follows the convention used by Anbernic devices, EmulationStation, and othe
 
 ## Architecture
 
+### Flow Diagram
+
+```mermaid
+flowchart TD
+    subgraph Main["Scraper Main Flow"]
+        A[Start] --> B[Scan ROM Directory]
+        B --> C[For Each ROM File]
+        C --> D{Skip Existing?}
+        D -->|Yes & Exists| E[Skip]
+        D -->|No| F[Try Adapters by Priority]
+    end
+
+    subgraph Adapters["Adapter Fallback Chain"]
+        F --> G[Libretro<br/>Priority 1]
+        G -->|Found| H[Download Image]
+        G -->|Not Found| I{More Adapters?}
+        I -->|Yes| J[ScreenScraper<br/>Priority 2]
+        J -->|Found| H
+        J -->|Not Found| K[Mark Not Found]
+        I -->|No| K
+    end
+
+    subgraph Libretro["Libretro Matching"]
+        L[Get Manifest] --> M{Cached?}
+        M -->|Yes| N[Use Cache]
+        M -->|No| O[Fetch from GitHub API]
+        O -->|Success| P[Cache & Use]
+        O -->|Rate Limited| Q[Fallback to CDN]
+        Q -->|Success| P
+        Q -->|Fail| R[Error]
+        N --> S[Match Filename]
+        P --> S
+        S --> T{Exact Match?}
+        T -->|Yes| U[Return Match]
+        T -->|No| V[Strip Variant Tags]
+        V --> W{Match?}
+        W -->|Yes| X[Return Best-Effort]
+        W -->|No| Y[Title-Only Search]
+        Y --> Z{Match?}
+        Z -->|Yes| X
+        Z -->|No| AA[Not Found]
+    end
+
+    subgraph ScreenScraper["ScreenScraper Matching"]
+        AB[Calculate CRC32] --> AC[API Lookup by Hash]
+        AC -->|Found| AD[Return Match]
+        AC -->|Not Found| AE[Not Found]
+    end
+
+    H --> AF[Save to Imgs/]
+    AF --> AG{More ROMs?}
+    AG -->|Yes| C
+    AG -->|No| AH[Print Summary]
+
+    E --> AG
+    K --> AG
+```
+
+### Directory Structure
+
 ```
 src/scraper/
 ├── adapters/           # Adapter interface & registry

@@ -235,13 +235,55 @@ describe('LibretroManifest', () => {
       await expect(manifest.prefetch(9999)).rejects.toThrow('Unsupported system ID: 9999');
     });
 
-    it('throws on 403 rate limit error', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    it('falls back to CDN on 403 rate limit and succeeds', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      // First call (GitHub) returns 403
+      // Next 3 calls (CDN folders) return HTML directory listings
+      fetchSpy
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(`
+            <pre>
+              <a href="Game%20(USA).png">Game (USA).png</a>
+            </pre>
+          `),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(`<pre></pre>`),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(`<pre></pre>`),
+        } as unknown as Response);
+
+      // Should succeed via CDN fallback
+      await expect(manifest.prefetch(3)).resolves.toBeUndefined();
+      expect(fetchSpy).toHaveBeenCalledTimes(4); // 1 GitHub + 3 CDN folders
+    });
+
+    it('throws when both GitHub and CDN fail', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      // GitHub returns 403, CDN returns errors
+      fetchSpy.mockResolvedValue({
         ok: false,
         status: 403,
       } as Response);
 
-      await expect(manifest.prefetch(3)).rejects.toThrow('GitHub API rate limit exceeded');
+      await expect(manifest.prefetch(3)).rejects.toThrow(
+        'GitHub API rate limit exceeded and CDN fallback failed'
+      );
     });
 
     it('throws on 404 not found error', async () => {
@@ -404,6 +446,41 @@ describe('LibretroManifest', () => {
 
       const result = await manifest.getManifest(3, 'box-2D');
       expect(result).toBeNull();
+    });
+
+    it('falls back to CDN on 403 rate limit', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      // GitHub returns 403, CDN returns directory listing
+      fetchSpy
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(`
+            <pre>
+              <a href="Super%20Mario%20Bros.%20(World).png">Super Mario Bros. (World).png</a>
+            </pre>
+          `),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(`<pre></pre>`),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: vi.fn().mockResolvedValue(`<pre></pre>`),
+        } as unknown as Response);
+
+      const result = await manifest.getManifest(3, 'box-2D');
+      expect(result).not.toBeNull();
+      expect(result!.filenames.has('Super Mario Bros. (World)')).toBe(true);
     });
 
     it('filters non-png and directory entries', async () => {

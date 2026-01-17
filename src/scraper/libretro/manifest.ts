@@ -6,6 +6,7 @@
  */
 
 import { getLibretroSystemName } from './systems.js';
+import { parseCdnDirectory } from './cdn-parser.js';
 
 /** GitHub Tree API base - returns all files in ONE request (no pagination) */
 const GITHUB_TREE_API = 'https://api.github.com/repos/libretro-thumbnails';
@@ -58,6 +59,17 @@ type SystemManifest = {
   /** Whether the fetch failed (cached to prevent retries) */
   failed?: boolean;
 };
+
+/** Result from GitHub API attempt */
+type GitHubApiResult = {
+  success: boolean;
+  manifest: SystemManifest | null;
+  rateLimited: boolean;
+  error?: string;
+};
+
+/** Target folders to fetch from CDN */
+const CDN_TARGET_FOLDERS = ['Named_Boxarts', 'Named_Snaps', 'Named_Titles'] as const;
 
 /**
  * Manifest cache for Libretro thumbnails.
@@ -119,12 +131,34 @@ export class LibretroManifest {
   }
 
   /**
-   * Fetch entire system manifest from GitHub Tree API.
+   * Fetch entire system manifest from GitHub Tree API with CDN fallback.
    * Returns all files across all folders in a single request.
    */
   private async fetchSystemManifest(systemName: string): Promise<SystemManifest | null> {
+    // Try GitHub first
+    const githubResult = await this.tryGitHubApi(systemName);
+    if (githubResult.success) {
+      return githubResult.manifest;
+    }
+
+    // If rate limited, try CDN fallback
+    if (githubResult.rateLimited) {
+      console.error(
+        `GitHub API rate limit exceeded for ${systemName}, trying CDN fallback...`
+      );
+      return await this.fetchFromCdn(systemName);
+    }
+
+    return null;
+  }
+
+  /**
+   * Try fetching manifest from GitHub Tree API.
+   * Returns structured result indicating success, rate limiting, or other errors.
+   */
+  private async tryGitHubApi(systemName: string): Promise<GitHubApiResult> {
     // GitHub repo name: replace spaces with underscores, dashes with underscores
-    const repoName = systemName.replace(/ /g, '_').replace(/-/g, '_');
+    const repoName = systemName.replace(/ /g, '_');
     const url = `${GITHUB_TREE_API}/${encodeURIComponent(repoName)}/git/trees/master?recursive=1`;
 
     try {
@@ -143,10 +177,30 @@ export class LibretroManifest {
 
       // Repository doesn't exist - return null for 404
       if (response.status === 404) {
-        return null;
+        return {
+          success: true,
+          manifest: null,
+          rateLimited: false,
+        };
       }
+
+      // Rate limited
+      if (response.status === 403) {
+        return {
+          success: false,
+          manifest: null,
+          rateLimited: true,
+          error: 'GitHub API rate limit exceeded',
+        };
+      }
+
       if (!response.ok) {
-        throw new Error(`GitHub API error: ${response.status}`);
+        return {
+          success: false,
+          manifest: null,
+          rateLimited: false,
+          error: `GitHub API error: ${response.status}`,
+        };
       }
 
       const data = (await response.json()) as GitHubTreeResponse;
@@ -155,12 +209,92 @@ export class LibretroManifest {
       const folders = this.processTreeEntries(data.tree);
 
       return {
-        folders,
-        fetchedAt: Date.now(),
+        success: true,
+        manifest: {
+          folders,
+          fetchedAt: Date.now(),
+        },
+        rateLimited: false,
       };
     } catch (err) {
       const error = err as Error;
-      console.error(`Failed to fetch manifest for ${systemName}: ${error.message}`);
+      return {
+        success: false,
+        manifest: null,
+        rateLimited: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Fetch system manifest from CDN by scraping directory listings.
+   * Falls back to this when GitHub API is rate-limited.
+   */
+  private async fetchFromCdn(systemName: string): Promise<SystemManifest | null> {
+    const folders = new Map<string, FolderManifest>();
+
+    for (const folder of CDN_TARGET_FOLDERS) {
+      const folderManifest = await this.fetchFolderFromCdn(systemName, folder);
+      if (folderManifest !== null) {
+        folders.set(folder, folderManifest);
+      }
+    }
+
+    // At least one folder must succeed
+    if (folders.size === 0) {
+      return null;
+    }
+
+    return { folders, fetchedAt: Date.now() };
+  }
+
+  /**
+   * Fetch a single folder manifest from CDN directory listing.
+   */
+  private async fetchFolderFromCdn(
+    systemName: string,
+    folder: string
+  ): Promise<FolderManifest | null> {
+    const encodedSystem = encodeURIComponent(systemName);
+    const url = `${LIBRETRO_CDN_BASE}/${encodedSystem}/${folder}/`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': this.userAgent,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const html = await response.text();
+      const filenames = parseCdnDirectory(html);
+
+      if (filenames.length === 0) {
+        return null;
+      }
+
+      // Build the folder manifest
+      const filenameSet = new Set<string>(filenames);
+      const lowercaseMap = new Map<string, string>();
+      for (const filename of filenames) {
+        lowercaseMap.set(filename.toLowerCase(), filename);
+      }
+
+      return {
+        filenames: filenameSet,
+        lowercaseMap,
+      };
+    } catch {
       return null;
     }
   }
@@ -329,48 +463,36 @@ export class LibretroManifest {
 
   /**
    * Fetch system manifest, throwing on errors instead of returning null.
+   * Uses CDN fallback when GitHub API is rate-limited.
    */
   private async fetchSystemManifestOrThrow(systemName: string): Promise<SystemManifest> {
-    const repoName = systemName.replace(/ /g, '_').replace(/-/g, '_');
-    const url = `${GITHUB_TREE_API}/${encodeURIComponent(repoName)}/git/trees/master?recursive=1`;
+    // Try GitHub first
+    const githubResult = await this.tryGitHubApi(systemName);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        headers: {
-          'User-Agent': this.userAgent,
-          Accept: 'application/vnd.github.v3+json',
-        },
-        signal: controller.signal,
-      });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      const error = err as Error;
-      throw new Error(`Failed to fetch manifest for ${systemName}: ${error.message}`);
+    if (githubResult.success) {
+      // 404 means system not found
+      if (githubResult.manifest === null) {
+        throw new Error(`System not found on Libretro: ${systemName}`);
+      }
+      return githubResult.manifest;
     }
 
-    clearTimeout(timeoutId);
-
-    if (response.status === 404) {
-      throw new Error(`System not found on Libretro: ${systemName}`);
+    // If rate limited, try CDN fallback
+    if (githubResult.rateLimited) {
+      console.error(
+        `GitHub API rate limit exceeded for ${systemName}, trying CDN fallback...`
+      );
+      const cdnManifest = await this.fetchFromCdn(systemName);
+      if (cdnManifest !== null) {
+        return cdnManifest;
+      }
+      throw new Error(
+        'GitHub API rate limit exceeded and CDN fallback failed. ' +
+          'Try again later or check your network connection.'
+      );
     }
-    if (response.status === 403) {
-      throw new Error(`GitHub API rate limit exceeded. Try again later.`);
-    }
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
 
-    const data = (await response.json()) as GitHubTreeResponse;
-    const folders = this.processTreeEntries(data.tree);
-
-    return {
-      folders,
-      fetchedAt: Date.now(),
-    };
+    throw new Error(`Failed to fetch manifest for ${systemName}: ${githubResult.error}`);
   }
 
   /**
