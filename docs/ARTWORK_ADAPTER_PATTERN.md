@@ -62,7 +62,7 @@ https://thumbnails.libretro.com/{System Name}/Named_Snaps/{Game Name}.png
 https://thumbnails.libretro.com/{System Name}/Named_Titles/{Game Name}.png
 ```
 
-**Filename Sanitization:** Characters `&*/:`<>?\|"` must be replaced with `_`
+**Filename Sanitization:** Characters `& * / : \` < > ? \ | "` must be replaced with `_`
 
 ---
 
@@ -484,62 +484,47 @@ src/scraper/arcadedb/
 
 ## Configuration Schema Changes
 
-### Current Schema
-```json
-{
-  "scraper": {
-    "source": "screenscraper",
-    "credentials": { ... }
-  }
-}
-```
+### Implemented Schema
 
-### Proposed Schema (Backward Compatible)
+The scraper configuration uses per-adapter settings with independent enable/priority controls:
+
 ```json
 {
   "scraper": {
-    "enabled": true,
-    "sources": [
-      {
-        "id": "libretro",
-        "enabled": true,
-        "priority": 1
-      },
-      {
-        "id": "screenscraper",
-        "enabled": true,
-        "priority": 2,
-        "credentials": {
-          "devId": "...",
-          "devPassword": "...",
-          "userId": "...",
-          "userPassword": "..."
-        }
-      },
-      {
-        "id": "thegamesdb",
-        "enabled": false,
-        "priority": 3,
-        "apiKey": "..."
-      },
-      {
-        "id": "arcadedb",
-        "enabled": true,
-        "priority": 4
-      }
-    ],
     "systemId": 4,
     "mediaType": "box-2D",
     "regionPriority": ["us", "wor", "eu", "jp"],
+    "resize": {
+      "enabled": false,
+      "maxWidth": 300,
+      "maxHeight": 300
+    },
     "skipExisting": true,
-    "rateLimitMs": 1000
+    "libretro": {
+      "enabled": true,
+      "priority": 1
+    },
+    "screenscraper": {
+      "enabled": false,
+      "priority": 2,
+      "credentials": {
+        "devId": "...",
+        "devPassword": "...",
+        "userId": "...",
+        "userPassword": "..."
+      },
+      "rateLimitMs": 1000
+    }
   }
 }
 ```
 
-### Backward Compatibility
+### Schema Notes
 
-Support legacy `source: "screenscraper"` format by auto-converting to new schema during config load.
+- Each adapter has its own configuration block with `enabled` and `priority` fields
+- Libretro is enabled by default (no credentials required)
+- ScreenScraper requires explicit credentials to enable
+- Future adapters (TheGamesDB, ArcadeDB) would follow the same pattern
 
 ---
 

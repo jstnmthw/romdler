@@ -4,7 +4,7 @@
 
 This document outlines the research and design for a feature that automatically downloads cover art and screenshots for ROM files from a remote source (ScreenScraper API). This enables visual ROM browsing on devices like Anbernic handhelds and EmulationStation-based frontends.
 
-**Chosen Approach:** Remote scraping from ScreenScraper.fr API using CRC32 hash-based ROM identification.
+**Chosen Approach:** Multi-source scraping with Libretro Thumbnails (default) and optional ScreenScraper.fr fallback. See [ARTWORK_ADAPTER_PATTERN.md](./ARTWORK_ADAPTER_PATTERN.md) for the adapter architecture.
 
 ---
 
@@ -481,7 +481,18 @@ src/
 │   ├── types.ts           // TypeScript interfaces
 │   ├── scanner.ts         // ROM directory scanning
 │   ├── hasher.ts          // CRC32 hash calculation
+│   ├── scraper.ts         // Main orchestrator
+│   ├── adapters/
+│   │   ├── types.ts       // Adapter interface definitions
+│   │   ├── registry.ts    // Adapter registry with fallback support
+│   │   └── index.ts       // Barrel exports
+│   ├── libretro/
+│   │   ├── adapter.ts     // Libretro Thumbnails adapter (default)
+│   │   ├── systems.ts     // System ID to folder name mappings
+│   │   ├── sanitizer.ts   // Filename sanitization for URLs
+│   │   └── index.ts       // Barrel exports
 │   ├── screenscraper/
+│   │   ├── adapter.ts     // ScreenScraper adapter
 │   │   ├── client.ts      // ScreenScraper API client
 │   │   ├── types.ts       // API response types
 │   │   └── systems.ts     // System ID mappings
@@ -538,7 +549,7 @@ src/
 
 ## Configuration Schema
 
-### Proposed Config Addition
+### Implemented Config
 
 ```json
 {
@@ -546,27 +557,35 @@ src/
   "downloadDir": "./downloads/roms/snes",
 
   "scraper": {
-    "enabled": true,
-    "source": "screenscraper",
-    "credentials": {
-      "devId": "your_dev_id",
-      "devPassword": "your_dev_password",
-      "userId": "your_ss_username",
-      "userPassword": "your_ss_password"
-    },
     "systemId": 4,
     "mediaType": "box-2D",
     "regionPriority": ["us", "wor", "eu", "jp"],
     "resize": {
-      "enabled": true,
+      "enabled": false,
       "maxWidth": 300,
       "maxHeight": 300
     },
     "skipExisting": true,
-    "rateLimitMs": 1000
+    "libretro": {
+      "enabled": true,
+      "priority": 1
+    },
+    "screenscraper": {
+      "enabled": false,
+      "priority": 2,
+      "credentials": {
+        "devId": "your_dev_id",
+        "devPassword": "your_dev_password",
+        "userId": "your_ss_username",
+        "userPassword": "your_ss_password"
+      },
+      "rateLimitMs": 1000
+    }
   }
 }
 ```
+
+> **Note:** Libretro Thumbnails is enabled by default and requires no credentials. ScreenScraper is available as a fallback for hash-based lookups when credentials are configured.
 
 ### Environment Variables (Alternative for Credentials)
 
