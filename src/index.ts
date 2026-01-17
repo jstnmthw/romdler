@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { loadConfig, type Config } from './config/index.js';
-import { parseArgs, type ScrapeCliArgs, type PurgeCliArgs } from './cli/index.js';
+import { parseArgs, type ScrapeCliArgs, type PurgeCliArgs, type DedupeCliArgs } from './cli/index.js';
 import { fetchHtml, isHttpError } from './http/index.js';
 import { parseTableLinks, filterZipLinks } from './parser/index.js';
 import { applyFilters } from './filter/index.js';
@@ -14,6 +14,7 @@ import { createRenderer, type Renderer } from './ui/index.js';
 import { resolveAndExtract, sanitizeFilename } from './utils/index.js';
 import { runScraper } from './scraper/index.js';
 import { runPurge } from './purge/index.js';
+import { runDedupe } from './dedupe/index.js';
 import type { FileEntry, UrlStats } from './types/index.js';
 
 async function processUrl(
@@ -229,6 +230,27 @@ async function runPurgeCommand(
   }
 }
 
+async function runDedupeCommand(
+  config: Config,
+  cliArgs: DedupeCliArgs
+): Promise<void> {
+  try {
+    const results = await runDedupe(config, {
+      dryRun: cliArgs.dryRun,
+      limit: cliArgs.limit,
+    });
+
+    // Check for failures
+    const hasFailures = results.some((r) => r.status === 'failed');
+    process.exit(hasFailures ? 1 : 0);
+  } catch (err) {
+    console.error(
+      err instanceof Error ? err.message : 'Dedupe failed'
+    );
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
   const cliArgs = parseArgs(process.argv.slice(2));
 
@@ -248,6 +270,8 @@ async function main(): Promise<void> {
     await runScrapeCommand(config, cliArgs);
   } else if (cliArgs.command === 'purge') {
     await runPurgeCommand(config, cliArgs);
+  } else if (cliArgs.command === 'dedupe') {
+    await runDedupeCommand(config, cliArgs);
   } else {
     const renderer = createRenderer(config.logLevel);
     renderer.banner(cliArgs.dryRun);

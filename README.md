@@ -11,6 +11,8 @@ A Node.js CLI for downloading ZIP archives from directory listings and fetching 
 - [Installation](#installation)
 - [Usage](#usage)
 - [Artwork Command](#artwork-command)
+- [Purge Command](#purge-command)
+- [Dedupe Command](#dedupe-command)
 - [Configuration](#configuration)
   - [Configuration Options](#configuration-options)
   - [Artwork Configuration](#artwork-configuration)
@@ -159,6 +161,108 @@ downloads/roms/snes/
 ```
 
 This follows the standard convention used by Anbernic devices, EmulationStation, and other frontends.
+
+---
+
+## Purge Command
+
+The `purge` command removes files from your download directory that match your blacklist patterns. This is useful for cleaning up unwanted files after an initial download.
+
+For detailed documentation, see [src/purge/README.md](src/purge/README.md).
+
+### Basic Usage
+
+```bash
+# Remove files matching blacklist patterns
+pnpm start -- purge
+
+# Preview what would be removed (no deletions)
+pnpm start -- purge --dry-run
+```
+
+### Purge Options
+
+```bash
+# Limit to first N deletions
+pnpm start -- purge --limit 10
+
+# Combine with dry-run to preview
+pnpm start -- purge --dry-run --limit 5
+```
+
+### CLI Options (Purge)
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--dry-run` | `-n` | Preview mode - show what would be deleted |
+| `--limit <N>` | `-l <N>` | Limit to first N deletions |
+| `--config <path>` | `-c <path>` | Use custom config file path |
+
+---
+
+## Dedupe Command
+
+The `dedupe` command identifies and removes duplicate ROM files, keeping only the "clean" original version when duplicates exist. Removed files are moved to a `deleted/` subfolder for safe recovery.
+
+For detailed documentation, see [src/dedupe/README.md](src/dedupe/README.md).
+
+### Basic Usage
+
+```bash
+# Analyze and move duplicates to deleted/ folder
+pnpm start -- dedupe
+
+# Preview what would be moved (no changes)
+pnpm start -- dedupe --dry-run
+```
+
+### How It Works
+
+1. **Parses filenames** to extract title, regions, and variant indicators
+2. **Groups files** by base signature (title + region + quality modifiers)
+3. **Identifies clean versions** (no Rev/Beta/Proto/dates/re-release platforms)
+4. **Moves variants** to `deleted/` only when a clean version exists
+5. **Keeps all files** if only variant versions exist (nothing to prefer)
+
+### Variant Indicators (moved when clean exists)
+
+- `(Rev X)`, `(Beta)`, `(Proto)`, `(Sample)`, `(Demo)` - Development versions
+- `(YYYY-MM-DD)` - Dated builds
+- `(Virtual Console)`, `(GameCube)`, `(Switch Online)` - Re-release platforms
+
+### Quality Modifiers (preserved as identity)
+
+- `(SGB Enhanced)`, `(GB Compatible)`, `(Rumble Version)` - Hardware features
+- `(En,Fr,De)` - Language codes
+- `(Unl)`, `(Pirate)` - Distribution type
+
+### Example
+
+**Input files:**
+```
+Mega Man 4 (USA).zip              <- KEEP (clean)
+Mega Man 4 (USA) (Rev 1).zip      <- MOVE (variant)
+Mega Man 4 (USA) (Beta).zip       <- MOVE (variant)
+Sonic (USA) (Beta).zip            <- KEEP (no clean exists)
+```
+
+**Output structure:**
+```
+downloads/roms/snes/
+├── Mega Man 4 (USA).zip
+├── Sonic (USA) (Beta).zip
+└── deleted/
+    ├── Mega Man 4 (USA) (Rev 1).zip
+    └── Mega Man 4 (USA) (Beta).zip
+```
+
+### CLI Options (Dedupe)
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--dry-run` | `-n` | Preview mode - show what would be moved |
+| `--limit <N>` | `-l <N>` | Limit to first N moves |
+| `--config <path>` | `-c <path>` | Use custom config file path |
 
 ---
 
@@ -325,6 +429,8 @@ romdler/
 │   │   ├── scanner.ts     # Directory scanner
 │   │   ├── downloader.ts  # Image downloader
 │   │   └── reporter.ts    # Scrape results reporter
+│   ├── purge/        # Blacklist-based file removal
+│   ├── dedupe/       # Duplicate ROM detection and removal
 │   ├── ui/           # Console rendering
 │   ├── utils/        # URL resolution, filename sanitization
 │   ├── types/        # Shared TypeScript types
