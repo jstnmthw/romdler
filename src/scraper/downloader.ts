@@ -38,7 +38,7 @@ export async function downloadImage(
     url,
     outputDir,
     filename,
-    userAgent = 'Wget/1.21.2',
+    userAgent,
     timeoutMs = 30000,
   } = options;
 

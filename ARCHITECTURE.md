@@ -626,7 +626,7 @@ describe('filename', () => {
 ## File Structure
 
 ```
-rom-downloader/
+romdler/
 ├── src/
 │   ├── cli/
 │   │   ├── index.ts

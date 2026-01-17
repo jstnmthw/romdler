@@ -15,10 +15,20 @@ const resizeSchema = z.object({
   maxHeight: z.number().int().min(100).max(1000).default(300),
 });
 
+/** Adapter source configuration schema */
+const adapterSourceSchema = z.object({
+  id: z.enum(['libretro', 'screenscraper']),
+  enabled: z.boolean().default(true),
+  priority: z.number().int().min(1).max(100).default(1),
+});
+
 /** Scraper configuration schema */
 const scraperSchema = z.object({
   enabled: z.boolean().default(false),
-  source: z.literal('screenscraper').default('screenscraper'),
+  /** @deprecated Use sources array instead */
+  source: z.enum(['screenscraper', 'libretro']).optional(),
+  /** Adapter sources with priority (lower priority = tried first) */
+  sources: z.array(adapterSourceSchema).optional(),
   credentials: scraperCredentialsSchema.optional(),
   systemId: z.number().int().min(1).optional(),
   mediaType: z.string().default('box-2D'),
@@ -45,3 +55,4 @@ export const configSchema = z.object({
 export type Config = z.infer<typeof configSchema>;
 export type ScraperCredentials = z.infer<typeof scraperCredentialsSchema>;
 export type ScraperConfigSchema = z.infer<typeof scraperSchema>;
+export type AdapterSourceConfigSchema = z.infer<typeof adapterSourceSchema>;

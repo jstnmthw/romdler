@@ -20,8 +20,10 @@ export interface ScrapeResult {
   imagePath?: string;
   /** CRC32 hash calculated for the ROM */
   crc?: string;
-  /** Game name from ScreenScraper (if found) */
+  /** Game name from source (if found) */
   gameName?: string;
+  /** Source adapter that provided the artwork */
+  source?: string;
   /** Error message (if failed) */
   error?: string;
 }
@@ -45,12 +47,26 @@ export interface ScreenScraperCredentials {
   userPassword: string;
 }
 
+/** Source adapter configuration */
+export interface SourceConfig {
+  /** Adapter identifier (e.g., 'libretro', 'screenscraper') */
+  id: 'libretro' | 'screenscraper';
+  /** Whether this source is enabled */
+  enabled: boolean;
+  /** Priority (lower = tried first) */
+  priority: number;
+}
+
 /** Configuration for the scraper */
 export interface ScraperConfig {
   enabled: boolean;
-  source: 'screenscraper';
-  credentials: ScreenScraperCredentials;
-  /** ScreenScraper system ID */
+  /** @deprecated Use sources array instead */
+  source?: 'screenscraper' | 'libretro';
+  /** Adapter sources with priority ordering */
+  sources?: SourceConfig[];
+  /** ScreenScraper credentials (required if screenscraper source is enabled) */
+  credentials?: ScreenScraperCredentials;
+  /** System ID for ROM identification */
   systemId: number;
   /** Media type to download (box-2D, ss, sstitle, etc.) */
   mediaType: string;
@@ -80,6 +96,8 @@ export interface ScrapeOptions {
   regionPriority?: string[];
   /** Limit number of ROMs to process */
   limit?: number;
+  /** Override source adapter (e.g., 'libretro', 'screenscraper') */
+  source?: string;
 }
 
 /** Media types available from ScreenScraper */

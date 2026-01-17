@@ -157,7 +157,7 @@ Create an `app.config.json` file in the project root:
   "whitelist": [],
   "blacklist": [],
   "concurrency": 1,
-  "userAgent": "ROM-Downloader/1.0 (Archival Tool)",
+  "userAgent": "Wget/1.21.2",
   "requestTimeoutMs": 30000,
   "retries": 2,
   "logLevel": "info"
@@ -174,7 +174,7 @@ Create an `app.config.json` file in the project root:
 | `whitelist` | `string[]` | `[]` | Only download files matching these terms |
 | `blacklist` | `string[]` | `[]` | Exclude files matching these terms |
 | `concurrency` | `number` | `1` | Number of concurrent downloads (1-10) |
-| `userAgent` | `string` | `"ROM-Downloader/1.0"` | User-Agent header for requests |
+| `userAgent` | `string` | `"Wget/1.21.2"` | User-Agent header for requests |
 | `requestTimeoutMs` | `number` | `30000` | Request timeout in milliseconds |
 | `retries` | `number` | `2` | Number of retry attempts for failed requests |
 | `logLevel` | `string` | `"info"` | Log level: `"debug"`, `"info"`, or `"silent"` |

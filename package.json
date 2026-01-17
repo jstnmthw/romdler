@@ -1,5 +1,5 @@
 {
-  "name": "rom-downloader",
+  "name": "romdler",
   "version": "1.0.0",
   "description": "Slim micro app for downloading ZIP files from archival website HTML table directories",
   "type": "module",

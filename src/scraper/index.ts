@@ -9,6 +9,7 @@ export type {
   ScreenScraperCredentials,
   ScraperConfig,
   ScrapeOptions,
+  SourceConfig,
   MediaType,
   RegionCode,
 } from './types.js';
@@ -31,6 +32,20 @@ export {
   renderDryRunList,
   calculateSummary,
 } from './reporter.js';
+
+// Adapter system
+export { adapterRegistry, AdapterRegistry } from './adapters/index.js';
+export type {
+  ArtworkAdapter,
+  AdapterCapabilities,
+  AdapterSourceConfig,
+  ArtworkLookupResult,
+  LookupParams,
+} from './adapters/index.js';
+
+// Libretro adapter
+export { LibretroAdapter, createLibretroAdapter } from './libretro/index.js';
+export type { LibretroAdapterOptions } from './libretro/index.js';
 
 // ScreenScraper client and utilities
 export * from './screenscraper/index.js';

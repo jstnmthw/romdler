@@ -13,14 +13,17 @@
   "logLevel": "info",
   "scraper": {
     "enabled": true,
-    "source": "screenscraper",
+    "sources": [
+      { "id": "libretro", "enabled": true, "priority": 1 },
+      { "id": "screenscraper", "enabled": true, "priority": 2 }
+    ],
     "credentials": {
       "devId": "YOUR_DEV_ID",
       "devPassword": "YOUR_DEV_PASSWORD",
       "userId": "YOUR_SCREENSCRAPER_USERNAME",
       "userPassword": "YOUR_SCREENSCRAPER_PASSWORD"
     },
-    "systemId": 4,
+    "systemId": 10,
     "mediaType": "box-2D",
     "regionPriority": ["us", "wor", "eu", "jp"],
     "resize": {
