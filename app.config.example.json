@@ -11,6 +11,21 @@
   "requestTimeoutMs": 30000,
   "retries": 2,
   "logLevel": "info",
+  "dedupe": {
+    "regions": ["USA", "World", "Europe", "Japan"],
+    "avoid": [
+      "Proto", "Beta", "Sample", "Demo", "Preview", "Promo",
+      "Unl", "Pirate", "Aftermarket",
+      "Virtual Console", "Retro-Bit", "Pixel Heart", "RetroZone",
+      "Switch Online", "GameCube", "Wii U", "3DS", "NSO", "e-Reader",
+      "iam8bit", "Limited Run", "Arcade Archives", "Mini Console",
+      "Genesis Mini", "SNES Classic", "NES Classic",
+      "Capcom Classics", "Namco Museum", "Konami Collector",
+      "Anniversary Collection", "Mega Man Legacy", "Disney Classic",
+      "Rev", "Alt"
+    ],
+    "tiebreaker": "shortest"
+  },
   "scraper": {
     "enabled": true,
     "systemId": 10,

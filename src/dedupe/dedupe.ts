@@ -314,10 +314,11 @@ export async function runDedupe(
   // Group files by signature
   const groupedMap = groupRomsBySignature(files);
 
-  // Analyze each group
+  // Analyze each group with user preferences
+  const preferences = config.dedupe;
   const analyzedGroups: RomGroup[] = [];
   for (const [signature, groupFiles] of groupedMap) {
-    analyzedGroups.push(analyzeGroup(signature, groupFiles));
+    analyzedGroups.push(analyzeGroup(signature, groupFiles, preferences));
   }
 
   // Get groups with duplicates to remove

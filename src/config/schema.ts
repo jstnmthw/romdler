@@ -29,6 +29,56 @@ const screenscraperConfigSchema = z.object({
   rateLimitMs: z.number().int().min(100).max(10000).default(1000),
 });
 
+/** Dedupe preference configuration schema */
+const dedupePreferencesSchema = z.object({
+  /** Preferred regions in priority order (first = most preferred) */
+  regions: z.array(z.string()).default(['USA', 'World', 'Europe', 'Japan']),
+  /** Tokens to avoid - files containing these are less preferred */
+  avoid: z.array(z.string()).default([
+    // Development versions
+    'Proto',
+    'Beta',
+    'Sample',
+    'Demo',
+    'Preview',
+    'Promo',
+    // Unofficial releases
+    'Unl',
+    'Pirate',
+    'Aftermarket',
+    // Re-release platforms
+    'Virtual Console',
+    'Retro-Bit',
+    'Pixel Heart',
+    'RetroZone',
+    'Switch Online',
+    'GameCube',
+    'Wii U',
+    '3DS',
+    'NSO',
+    'e-Reader',
+    'iam8bit',
+    'Limited Run',
+    'Arcade Archives',
+    'Mini Console',
+    'Genesis Mini',
+    'SNES Classic',
+    'NES Classic',
+    // Compilation releases
+    'Capcom Classics',
+    'Namco Museum',
+    'Konami Collector',
+    'Anniversary Collection',
+    'Mega Man Legacy',
+    'Disney Classic',
+    // Revision/alternate
+    'Rev',
+    'Alt',
+  ]),
+  /** How to break ties when multiple candidates remain */
+  tiebreaker: z.enum(['shortest', 'alphabetical']).default('shortest'),
+});
+
 /** Artwork scraper configuration schema */
 const scraperSchema = z.object({
   /** Enable artwork downloading */
@@ -62,9 +112,11 @@ export const configSchema = z.object({
   retries: z.number().int().min(0).max(10).default(2),
   logLevel: z.enum(['debug', 'info', 'silent']).default('info'),
   scraper: scraperSchema.optional(),
+  dedupe: dedupePreferencesSchema.optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
+export type DedupePreferences = z.infer<typeof dedupePreferencesSchema>;
 export type ScraperConfigSchema = z.infer<typeof scraperSchema>;
 export type LibretroConfigSchema = z.infer<typeof libretroConfigSchema>;
 export type ScreenScraperConfigSchema = z.infer<typeof screenscraperConfigSchema>;

@@ -24,6 +24,29 @@ const REGION_CODES = new Set([
   'UK',
 ]);
 
+/**
+ * Split a multi-region token like "USA, Europe" into individual regions
+ * @param token - Token that may contain multiple regions
+ * @returns Array of individual region strings
+ */
+function splitMultiRegion(token: string): string[] {
+  // Check if this looks like a multi-region token (contains comma)
+  if (!token.includes(',')) {
+    return [token];
+  }
+
+  // Split by comma and check if all parts are valid regions
+  const parts = token.split(',').map((p) => p.trim());
+  const allRegions = parts.every((p) => REGION_CODES.has(p));
+
+  if (allRegions) {
+    return parts;
+  }
+
+  // Not a multi-region token, return as-is
+  return [token];
+}
+
 /** Patterns for variant indicators (non-clean versions to remove when clean exists) */
 const VARIANT_PATTERNS = [
   // Development versions
@@ -99,12 +122,23 @@ const LANGUAGE_PATTERN = /^[A-Z][a-z](?:,[A-Z][a-z])*$/;
 const SINGLE_LANGUAGE_PATTERN = /^(?:En|Fr|De|Es|It|Ja|Pt|Nl|Sv|No|Da|Fi|Pl|Ru|Ko|Zh)$/;
 
 /**
- * Check if a token is a region code
+ * Check if a token is or contains region codes
  * @param token - Parenthetical token to check
- * @returns True if token is a region code
+ * @returns Array of regions if found, empty array otherwise
  */
-function isRegion(token: string): boolean {
-  return REGION_CODES.has(token);
+function extractRegions(token: string): string[] {
+  // Single region check
+  if (REGION_CODES.has(token)) {
+    return [token];
+  }
+
+  // Multi-region check (e.g., "USA, Europe")
+  const parts = splitMultiRegion(token);
+  if (parts.length > 1) {
+    return parts;
+  }
+
+  return [];
 }
 
 /**
@@ -197,16 +231,11 @@ function extractTitle(filename: string): string {
 
 /**
  * Create a base signature for grouping ROMs
+ * Groups by title only for aggressive matching
  * @param title - Game title
- * @param regions - Region codes
- * @param qualityModifiers - Quality modifiers
  * @returns Normalized signature string
  */
-function createBaseSignature(
-  title: string,
-  regions: string[],
-  qualityModifiers: string[]
-): string {
+function createBaseSignature(title: string): string {
   // Normalize title: lowercase, remove special chars, collapse whitespace
   const normalizedTitle = title
     .toLowerCase()
@@ -214,13 +243,7 @@ function createBaseSignature(
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Sort and normalize regions
-  const normalizedRegions = regions.map((r) => r.toLowerCase()).sort();
-
-  // Sort and normalize quality modifiers
-  const normalizedModifiers = qualityModifiers.map((m) => m.toLowerCase()).sort();
-
-  return `${normalizedTitle}|${normalizedRegions.join(',')}|${normalizedModifiers.join(',')}`;
+  return normalizedTitle;
 }
 
 /**
@@ -240,8 +263,10 @@ export function parseRomFilename(filename: string): ParsedRomName {
 
   // Process parenthetical tokens
   for (const token of parenTokens) {
-    if (isRegion(token)) {
-      regions.push(token);
+    // Check for regions first (handles multi-region like "USA, Europe")
+    const foundRegions = extractRegions(token);
+    if (foundRegions.length > 0) {
+      regions.push(...foundRegions);
     } else if (isVariantIndicator(token)) {
       variantIndicators.push(token);
     } else if (isQualityModifier(token)) {
@@ -257,9 +282,14 @@ export function parseRomFilename(filename: string): ParsedRomName {
     extraTokens.push(`[${token}]`);
   }
 
+  // Collect all tokens for preference matching
+  const allTokens = [...parenTokens, ...bracketTokens];
+
   // A file is "clean" only if it has no variant indicators AND no extra tokens
   const isClean = variantIndicators.length === 0 && extraTokens.length === 0;
-  const baseSignature = createBaseSignature(title, regions, qualityModifiers);
+
+  // Group by title only for aggressive matching
+  const baseSignature = createBaseSignature(title);
 
   return {
     filename,
@@ -268,6 +298,7 @@ export function parseRomFilename(filename: string): ParsedRomName {
     qualityModifiers,
     variantIndicators,
     extraTokens,
+    allTokens,
     isClean,
     baseSignature,
   };

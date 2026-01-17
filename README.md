@@ -204,7 +204,7 @@ pnpm start -- purge --dry-run --limit 5
 
 ## Dedupe Command
 
-The `dedupe` command identifies and removes duplicate ROM files, keeping only the "clean" original version when duplicates exist. Removed files are moved to a `deleted/` subfolder for safe recovery.
+The `dedupe` command identifies and removes duplicate ROM files using preference-based selection. It groups files by title, then picks the best version from each group based on configurable preferences. Removed files are moved to a `deleted/` subfolder for safe recovery.
 
 For detailed documentation, see [src/dedupe/README.md](src/dedupe/README.md).
 
@@ -220,67 +220,83 @@ pnpm start -- dedupe --dry-run
 
 ### How It Works
 
-1. **Parses filenames** to extract title, regions, quality modifiers, variant indicators, and extra tokens
-2. **Groups files** by base signature (title + region + quality modifiers)
-3. **Identifies clean versions** - files with NO variant indicators AND NO extra tokens
-4. **Prefers purest version** - files ending with just region tags like `(USA).zip` are preferred
-5. **Moves variants** to `deleted/` only when a clean version exists
-6. **Keeps all files** if only variant versions exist (nothing to prefer)
+1. **Parses filenames** to extract title, regions, and tokens
+2. **Groups files by title** (aggressive grouping ignores region/modifier differences)
+3. **Applies preference rules** to pick the best file from each group:
+   - Fewer "avoid" tokens = better (Beta, Proto, Retro-Bit, etc.)
+   - Better region priority = better (USA > World > Europe > Japan by default)
+   - Shorter filename = better (tiebreaker)
+4. **Moves non-preferred files** to `deleted/` folder
 
-### Clean File Detection
+### Preference-Based Selection
 
-A file is considered "clean" (the canonical original) when it has:
-- **No variant indicators** (Rev, Beta, Proto, etc.)
-- **No extra/unrecognized tokens** (unknown parenthetical tags)
-- **No bracket tokens** (`[b]`, `[h]`, `[!]`, etc.)
+Unlike simple clean/variant detection, dedupe uses configurable preferences to **always pick exactly one file** per group, even when all versions are variants.
 
-### Variant Indicators (moved when clean exists)
+**Selection priority:**
+1. **Avoid tokens** - Files containing fewer "avoid" terms win
+2. **Region priority** - Files with higher-priority regions win
+3. **Tiebreaker** - Shorter filenames win (fewer modifiers = cleaner)
 
-- `(Rev X)`, `(Beta)`, `(Proto)`, `(Sample)`, `(Demo)` - Development versions
-- `(YYYY-MM-DD)` - Dated builds
-- `(Virtual Console)`, `(GameCube)`, `(Switch Online)` - Re-release platforms
-- `(Retro-Bit)`, `(iam8bit)`, `(Limited Run)` - Special editions
-- `(Capcom Classics)`, `(Namco Museum)`, `(Mega Man Legacy)` - Compilations
-- `(Genesis Mini)`, `(SNES Classic)`, `(NES Classic)` - Mini consoles
+### Configuration
 
-### Extra Tokens (Bracket Tags)
+Add a `dedupe` section to your `app.config.json`:
 
-ROM status indicators in square brackets make a file less preferred:
-- `[b]` - Bad dump
-- `[h]` - Hack
-- `[!]` - Verified good dump
-- `[a]` - Alternate
+```json
+{
+  "dedupe": {
+    "regions": ["USA", "World", "Europe", "Japan"],
+    "avoid": [
+      "Proto", "Beta", "Sample", "Demo", "Rev", "Alt",
+      "Virtual Console", "Retro-Bit", "Pixel Heart",
+      "Switch Online", "GameCube", "Unl", "Pirate"
+    ],
+    "tiebreaker": "shortest"
+  }
+}
+```
 
-Unrecognized parenthetical tokens are also tracked as extra tokens.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `regions` | `string[]` | `["USA", "World", "Europe", "Japan"]` | Region preference order (first = most preferred) |
+| `avoid` | `string[]` | (see defaults) | Tokens to avoid - files containing these are less preferred |
+| `tiebreaker` | `string` | `"shortest"` | How to break ties: `"shortest"` or `"alphabetical"` |
 
-### Quality Modifiers (preserved as identity)
+### Default Avoid List
 
-- `(SGB Enhanced)`, `(GB Compatible)`, `(Rumble Version)` - Hardware features
-- `(En,Fr,De)` - Language codes
-- `(Unl)`, `(Pirate)` - Distribution type
+Development versions, unofficial releases, re-release platforms, and compilations:
+- `Proto`, `Beta`, `Sample`, `Demo`, `Preview`, `Promo`, `Rev`, `Alt`
+- `Unl`, `Pirate`, `Aftermarket`
+- `Virtual Console`, `Retro-Bit`, `Pixel Heart`, `RetroZone`, `Switch Online`
+- `GameCube`, `Wii U`, `3DS`, `NSO`, `e-Reader`, `iam8bit`, `Limited Run`
+- `Genesis Mini`, `SNES Classic`, `NES Classic`, `Mini Console`
+- `Capcom Classics`, `Namco Museum`, `Mega Man Legacy`, etc.
+
+### Multi-Region Support
+
+Dedupe correctly parses multi-region tokens like `(USA, Europe)` into separate regions, ensuring proper grouping and region priority matching.
 
 ### Example
 
 **Input files:**
 ```
-Mega Man 4 (USA).zip                         <- KEEP (clean - only region)
-Mega Man 4 (USA) (Rev 1).zip                 <- MOVE (variant indicator)
-Mega Man 4 (USA) (Retro-Bit Generations).zip <- MOVE (compilation variant)
-Sonic (USA) (Beta).zip                       <- KEEP (no clean exists)
-Bionic Commando (USA).zip                    <- KEEP (clean)
-Bionic Commando (USA) (Capcom Classics) [b].zip <- MOVE (variant + bracket tag)
+8 Eyes (USA).zip                           <- KEEP (preferred)
+8 Eyes (USA, Europe) (Pixel Heart).zip     <- MOVE (Pixel Heart in avoid list)
+Airball (USA) (Proto 1) (Unl).zip          <- KEEP (best of variants)
+Airball (USA) (Proto 2) (Unl).zip          <- MOVE
+Airball (USA) (Proto 3) (Unl).zip          <- MOVE
+Airball (USA) (RetroZone) (Pirate).zip     <- MOVE
 ```
 
 **Output structure:**
 ```
-downloads/roms/snes/
-├── Mega Man 4 (USA).zip
-├── Sonic (USA) (Beta).zip
-├── Bionic Commando (USA).zip
+downloads/roms/nes/
+├── 8 Eyes (USA).zip
+├── Airball (USA) (Proto 1) (Unl).zip
 └── deleted/
-    ├── Mega Man 4 (USA) (Rev 1).zip
-    ├── Mega Man 4 (USA) (Retro-Bit Generations).zip
-    └── Bionic Commando (USA) (Capcom Classics) [b].zip
+    ├── 8 Eyes (USA, Europe) (Pixel Heart).zip
+    ├── Airball (USA) (Proto 2) (Unl).zip
+    ├── Airball (USA) (Proto 3) (Unl).zip
+    └── Airball (USA) (RetroZone) (Pirate).zip
 ```
 
 ### CLI Options (Dedupe)
@@ -329,6 +345,7 @@ Create an `app.config.json` file in the project root:
 | `retries` | `number` | `2` | Number of retry attempts for failed requests |
 | `logLevel` | `string` | `"info"` | Log level: `"debug"`, `"info"`, or `"silent"` |
 | `scraper` | `object` | `undefined` | Scraper configuration (see below) |
+| `dedupe` | `object` | `undefined` | Dedupe preferences (see [Dedupe Command](#dedupe-command)) |
 
 ### Scraper Configuration
 

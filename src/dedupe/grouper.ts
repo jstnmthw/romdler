@@ -1,4 +1,6 @@
+import type { DedupePreferences } from '../config/index.js';
 import type { DedupeRomFile, RomGroup } from './types.js';
+import { selectPreferred } from './selector.js';
 
 /**
  * Group ROM files by their base signature
@@ -26,67 +28,40 @@ export function groupRomsBySignature(
 
 /**
  * Analyze a group of ROM files to determine preferred version and what to remove
+ * Uses preference-based selection to pick the best file from each group
  * @param signature - Base signature for the group
  * @param files - Array of ROM files in the group
+ * @param preferences - Optional user preferences for selection
  * @returns Analyzed ROM group with preferred/variant/removal lists
  */
 export function analyzeGroup(
   signature: string,
-  files: DedupeRomFile[]
+  files: DedupeRomFile[],
+  preferences?: DedupePreferences
 ): RomGroup {
-  // Sort files: clean versions first, then by filename
-  const sorted = [...files].sort((a, b) => {
-    // Clean versions come first
-    if (a.parsed.isClean && !b.parsed.isClean) {
-      return -1;
-    }
-    if (!a.parsed.isClean && b.parsed.isClean) {
-      return 1;
-    }
-    // Then sort by filename
-    return a.filename.localeCompare(b.filename);
-  });
-
-  // Separate clean and variant versions
-  const cleanVersions = sorted.filter((f) => f.parsed.isClean);
-  const variantVersions = sorted.filter((f) => !f.parsed.isClean);
-
-  // Use first file's title as display title
+  // Use first file's title as display title (sorted for consistency)
+  const sorted = [...files].sort((a, b) => a.filename.localeCompare(b.filename));
   const firstFile = sorted[0];
   const displayTitle =
     firstFile !== undefined ? firstFile.parsed.title : 'Unknown';
 
-  // Determine preferred version and what to remove
-  let preferred: DedupeRomFile | null = null;
-  const toRemove: DedupeRomFile[] = [];
-  const toKeep: DedupeRomFile[] = [];
-
-  if (cleanVersions.length > 0) {
-    // If we have clean versions, the first one is preferred
-    const firstClean = cleanVersions[0];
-    if (firstClean !== undefined) {
-      preferred = firstClean;
-      toKeep.push(firstClean);
-    }
-
-    // Additional clean versions are also kept (they may have different modifiers)
-    for (let i = 1; i < cleanVersions.length; i++) {
-      const cleanFile = cleanVersions[i];
-      if (cleanFile !== undefined) {
-        toKeep.push(cleanFile);
-      }
-    }
-
-    // All variant versions are marked for removal
-    for (const variant of variantVersions) {
-      toRemove.push(variant);
-    }
-  } else {
-    // No clean versions - keep all variants (nothing to prefer)
-    for (const variant of variantVersions) {
-      toKeep.push(variant);
-    }
+  // Single file - nothing to dedupe
+  if (files.length === 1 && firstFile !== undefined) {
+    return {
+      signature,
+      displayTitle,
+      preferred: firstFile,
+      variants: [],
+      toRemove: [],
+      toKeep: [firstFile],
+    };
   }
+
+  // Use preference-based selection to pick the best file
+  const { preferred, toRemove } = selectPreferred(files, preferences);
+
+  // Identify variant versions (non-clean)
+  const variantVersions = files.filter((f) => !f.parsed.isClean);
 
   return {
     signature,
@@ -94,7 +69,7 @@ export function analyzeGroup(
     preferred,
     variants: variantVersions,
     toRemove,
-    toKeep,
+    toKeep: [preferred],
   };
 }
 

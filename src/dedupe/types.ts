@@ -12,9 +12,11 @@ export type ParsedRomName = {
   variantIndicators: string[];
   /** Extra unrecognized tokens (make file less preferred) */
   extraTokens: string[];
+  /** All tokens from parentheses and brackets (for preference matching) */
+  allTokens: string[];
   /** Whether this is a clean version (no variant indicators or extra tokens) */
   isClean: boolean;
-  /** Base signature for grouping (title + regions + quality modifiers) */
+  /** Base signature for grouping (title only for aggressive matching) */
   baseSignature: string;
 };
 
