@@ -305,62 +305,87 @@ This follows the convention used by Anbernic devices, EmulationStation, and othe
 
 ## Architecture
 
-### Flow Diagram
+### Main Scraper Flow
+
+The scraper scans a ROM directory and processes each file, checking if artwork already exists before attempting to download.
 
 ```mermaid
 flowchart TD
-    subgraph Main["Scraper Main Flow"]
-        A[Start] --> B[Scan ROM Directory]
-        B --> C[For Each ROM File]
-        C --> D{Skip Existing?}
-        D -->|Yes & Exists| E[Skip]
-        D -->|No| F[Try Adapters by Priority]
-    end
+    A[Start] --> B[Scan ROM Directory]
+    B --> C[For Each ROM File]
+    C --> D{Skip Existing?}
+    D -->|Yes & Exists| E[Skip]
+    D -->|No| F[Try Adapters]
+    F --> G{Found?}
+    G -->|Yes| H[Download Image]
+    G -->|No| I[Mark Not Found]
+    H --> J[Save to Imgs/]
+    J --> K{More ROMs?}
+    E --> K
+    I --> K
+    K -->|Yes| C
+    K -->|No| L[Print Summary]
+```
 
-    subgraph Adapters["Adapter Fallback Chain"]
-        F --> G[Libretro<br/>Priority 1]
-        G -->|Found| H[Download Image]
-        G -->|Not Found| I{More Adapters?}
-        I -->|Yes| J[ScreenScraper<br/>Priority 2]
-        J -->|Found| H
-        J -->|Not Found| K[Mark Not Found]
-        I -->|No| K
-    end
+### Adapter Fallback Chain
 
-    subgraph Libretro["Libretro Matching"]
-        L[Get Manifest] --> M{Cached?}
-        M -->|Yes| N[Use Cache]
-        M -->|No| O[Fetch from GitHub API]
-        O -->|Success| P[Cache & Use]
-        O -->|Rate Limited| Q[Fallback to CDN]
-        Q -->|Success| P
-        Q -->|Fail| R[Error]
-        N --> S[Match Filename]
-        P --> S
-        S --> T{Exact Match?}
-        T -->|Yes| U[Return Match]
-        T -->|No| V[Strip Variant Tags]
-        V --> W{Match?}
-        W -->|Yes| X[Return Best-Effort]
-        W -->|No| Y[Title-Only Search]
-        Y --> Z{Match?}
-        Z -->|Yes| X
-        Z -->|No| AA[Not Found]
-    end
+Adapters are tried in priority order. If Libretro doesn't find a match, ScreenScraper is tried next (if configured).
 
-    subgraph ScreenScraper["ScreenScraper Matching"]
-        AB[Calculate CRC32] --> AC[API Lookup by Hash]
-        AC -->|Found| AD[Return Match]
-        AC -->|Not Found| AE[Not Found]
-    end
+```mermaid
+flowchart LR
+    A[ROM File] --> B[Libretro<br/>Priority 1]
+    B -->|Found| C[Download]
+    B -->|Not Found| D{ScreenScraper<br/>Enabled?}
+    D -->|Yes| E[ScreenScraper<br/>Priority 2]
+    D -->|No| F[Not Found]
+    E -->|Found| C
+    E -->|Not Found| F
+```
 
-    H --> AF[Save to Imgs/]
-    AF --> AG{More ROMs?}
-    AG -->|Yes| C
-    AG -->|No| AH[Print Summary]
+### Libretro Manifest Fetching
 
-    E --> AG
-    K --> AG
+Libretro uses a cached manifest for fast lookups. The manifest is fetched from GitHub API, with CDN fallback when rate-limited.
+
+```mermaid
+flowchart TD
+    A[Get Manifest] --> B{Cached?}
+    B -->|Yes| C[Use Cache]
+    B -->|No| D[Fetch from GitHub API]
+    D -->|Success| E[Cache & Use]
+    D -->|Rate Limited| F[Fallback to CDN]
+    F -->|Success| E
+    F -->|Fail| G[Error]
+    C --> H[Match Filename]
+    E --> H
+```
+
+### Libretro Filename Matching
+
+Three-phase matching: exact match first, then variant-stripped, finally title-only with region priority.
+
+```mermaid
+flowchart TD
+    A[Filename] --> B{Exact Match?}
+    B -->|Yes| C[Return Match]
+    B -->|No| D[Strip Variant Tags]
+    D --> E{Match?}
+    E -->|Yes| F[Return Best-Effort]
+    E -->|No| G[Title-Only Search]
+    G --> H{Match?}
+    H -->|Yes| F
+    H -->|No| I[Not Found]
+```
+
+### ScreenScraper Lookup
+
+ScreenScraper uses CRC32 hash-based matching for maximum accuracy against their database.
+
+```mermaid
+flowchart LR
+    A[ROM File] --> B[Calculate CRC32]
+    B --> C[API Lookup by Hash]
+    C -->|Found| D[Return Match]
+    C -->|Not Found| E[Not Found]
 ```
 
 ### Directory Structure
