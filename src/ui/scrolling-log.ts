@@ -69,13 +69,32 @@ export class ScrollingLog {
   }
 
   /**
+   * Adds a line and updates progress in a single render (prevents flickering).
+   */
+  addLineWithProgress(line: string, progressLine: string | null): void {
+    if (!this.isTTY) {
+      console.log(line);
+      return;
+    }
+
+    this.lines.push(line);
+    if (this.lines.length > this.maxLines) {
+      this.lines.shift();
+    }
+
+    this.progressLine = progressLine;
+    this.render();
+  }
+
+  /**
    * Renders the current state to the terminal.
    */
   private render(): void {
     const output: string[] = [...this.lines];
 
     if (this.progressLine !== null) {
-      output.push(this.progressLine);
+      // Indent to align with log entries (which have status icon + space)
+      output.push(`  ${this.progressLine}`);
     }
 
     logUpdate(output.join('\n'));

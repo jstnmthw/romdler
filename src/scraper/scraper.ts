@@ -146,7 +146,6 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   // Log active sources
   const sourceNames = initializedSources.map((s) => s.id).join(', ');
   console.log(chalk.white.bold(`Sources: ${chalk.cyan(sourceNames)}`));
-  console.log('');
 
   // Process each system
   for (const systemConfig of config.systems) {
@@ -182,7 +181,8 @@ async function scrapeSystem(
   console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
 
   const mediaType = options.mediaType ?? config.scraper?.mediaType ?? 'box-2D';
-  const regionPriority = options.regionPriority ?? config.scraper?.regionPriority ?? ['us', 'wor', 'eu', 'jp'];
+  const regionPriority = options.regionPriority ??
+    config.scraper?.regionPriority ?? ['us', 'wor', 'eu', 'jp'];
   const skipExisting = !options.force && (config.scraper?.skipExisting ?? true);
 
   // Prefetch manifests for adapters that support it

@@ -193,5 +193,6 @@ export function renderProgressBarString(options: ProgressBarStringOptions): stri
   // File progress
   const fileProgress = `${fileIndex + 1}/${totalFiles}`;
 
-  return `${chalk.cyan(truncated)} |${chalk.green(bar)}| ${percentage}% | ${downloadedStr}/${totalStr} | ${speedStr} | ${fileProgress}`;
+  // Filename on first line, empty line, then progress bar (indented to align)
+  return `${chalk.cyan(truncated)}\n\n  |${chalk.green(bar)}| ${percentage}% | ${downloadedStr}/${totalStr} | ${speedStr} | ${fileProgress}`;
 }

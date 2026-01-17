@@ -18,6 +18,7 @@ export function renderUrlSummary(stats: UrlStats): string {
     '',
     `  ${chalk.gray('Destination:')}     ${chalk.cyan(stats.downloadDir)}`,
     '',
+    '',
   ];
 
   return lines.join('\n');

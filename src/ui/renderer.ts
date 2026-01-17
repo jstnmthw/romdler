@@ -180,6 +180,11 @@ export class Renderer {
       return;
     }
 
+    // Initialize scrolling log on first file (may be skipped, so not in downloadProgress)
+    if (this.scrollingLog === null && this.isTTY) {
+      this.scrollingLog = new ScrollingLog({ maxLines: 8, persistOnDone: false });
+    }
+
     const statusIcon =
       result.status === 'downloaded'
         ? StatusIcon.success
@@ -200,8 +205,8 @@ export class Renderer {
     const line = `${statusIcon} ${chalk.cyan(decodeForDisplay(result.filename))} ${statusText} ${counter}`;
 
     // Add to scrolling log if active (TTY mode), otherwise just print
-    if (this.scrollingLog !== null && this.isTTY) {
-      this.scrollingLog.clearProgress();
+    if (this.scrollingLog !== null) {
+      // Just add the line - progress bar is managed by downloadProgress()
       this.scrollingLog.addLine(line);
     } else {
       console.log(line);
