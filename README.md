@@ -324,26 +324,27 @@ Only required if using the `screenscraper` source:
 
 The whitelist and blacklist support an AND/OR expression syntax:
 
+**OR matching** - multiple terms in the array match if any term is found:
 ```json
 {
   "whitelist": ["mario", "zelda"]
 }
 ```
-This matches files containing "mario" OR "zelda".
 
+**AND matching** - use `AND` within a term to require all words:
 ```json
 {
   "whitelist": ["super AND mario"]
 }
 ```
-This matches files containing BOTH "super" AND "mario".
 
+**Combined** - mix AND expressions with OR logic:
 ```json
 {
   "whitelist": ["super AND mario", "zelda"]
 }
 ```
-This matches files containing ("super" AND "mario") OR "zelda".
+This matches ("super" AND "mario") OR "zelda".
 
 **Match targets:** Filtering matches against both the filename and the link text.
 
