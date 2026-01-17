@@ -1,7 +1,7 @@
 {
   "name": "romdler",
   "version": "1.0.0",
-  "description": "Slim micro app for downloading ZIP files from archival website HTML table directories",
+  "description": "A Node.js CLI for downloading ZIP archives from directory listings and fetching box art for use with gaming frontends.",
   "type": "module",
   "main": "dist/index.js",
   "engines": {

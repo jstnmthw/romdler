@@ -1,5 +1,7 @@
 # Romdler
 
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jstnmthw/23dc7a3936b93f223a1ad4f51e3a0879/raw/romdler-coverage.json)
+
 A Node.js CLI for downloading ZIP archives from directory listings and fetching box art for use with gaming frontends.
 
 > **Disclaimer:** This software is intended for use only when you have explicit authorization from the owner of the server or service to access and download content. Users are solely responsible for ensuring their use complies with applicable laws and terms of service. The authors are not liable for any misuse of this software.
