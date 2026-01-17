@@ -47,8 +47,8 @@ export class ScreenScraperClient {
 
   constructor(
     credentials: ScreenScraperCredentials,
-    rateLimitMs: number = 1000,
-    userAgent: string = 'Wget/1.21.2'
+    rateLimitMs: number,
+    userAgent: string
   ) {
     this.credentials = credentials;
     this.rateLimiter = new RateLimiter(rateLimitMs);
@@ -134,6 +134,7 @@ export class ScreenScraperClient {
       output: 'json',
       crc: params.crc,
       systemeid: params.systemId.toString(),
+      romtype: 'rom',
       romnom: params.romName,
       romtaille: params.romSize.toString(),
     });

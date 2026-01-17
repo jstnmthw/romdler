@@ -13,6 +13,8 @@ import {
   renderDryRunList,
   calculateSummary,
 } from './reporter.js';
+import { printScraperBanner, printScraperDryRunBanner } from '../ui/index.js';
+import chalk from 'chalk';
 
 /**
  * Main scraper orchestrator.
@@ -25,6 +27,13 @@ export async function runScraper(
   config: Config,
   options: ScrapeOptions
 ): Promise<ScrapeResult[]> {
+  // Print banner
+  if (options.dryRun) {
+    printScraperDryRunBanner();
+  } else {
+    printScraperBanner();
+  }
+
   const startTime = Date.now();
   const results: ScrapeResult[] = [];
 
@@ -43,10 +52,10 @@ export async function runScraper(
 
   const credentials = config.scraper.credentials as ScreenScraperCredentials;
   const systemId = config.scraper.systemId;
-  const mediaType = options.mediaType ?? config.scraper.mediaType ?? 'box-2D';
-  const regionPriority = options.regionPriority ?? config.scraper.regionPriority ?? ['us', 'wor', 'eu', 'jp'];
-  const skipExisting = !options.force && (config.scraper.skipExisting ?? true);
-  const rateLimitMs = config.scraper.rateLimitMs ?? 1000;
+  const mediaType = options.mediaType ?? config.scraper.mediaType;
+  const regionPriority = options.regionPriority ?? config.scraper.regionPriority;
+  const skipExisting = !options.force && config.scraper.skipExisting;
+  const rateLimitMs = config.scraper.rateLimitMs;
 
   // Get ROM extensions for this system
   const extensions = getExtensionsForSystem(systemId);
@@ -55,22 +64,23 @@ export async function runScraper(
   const downloadDir = path.resolve(config.downloadDir);
   const imgsDir = getImgsDirectory(downloadDir);
 
-  console.log(`\nScanning for ROMs in: ${downloadDir}`);
+  console.log(chalk.white.bold(`Directory: ${chalk.cyan(downloadDir)}`));
   const roms = await scanForRoms(downloadDir, extensions);
 
   if (roms.length === 0) {
-    console.log('No ROM files found.');
+    console.log(`  ${chalk.red('✗')} No ROM files found.`);
     return [];
   }
 
-  console.log(`Found ${roms.length} ROM files.`);
+  console.log(`  ${chalk.green('✔')} Found ${chalk.white(roms.length)} ROM files`);
 
   // Apply limit if specified
   let romsToProcess = roms;
   if (options.limit !== undefined && options.limit > 0 && options.limit < roms.length) {
     romsToProcess = roms.slice(0, options.limit);
-    console.log(`Processing first ${options.limit} ROMs (--limit).`);
+    console.log(`  Limited to: ${chalk.yellow(options.limit)} ROMs`);
   }
+  console.log('');
 
   // Check for existing images if skipExisting is enabled
   if (skipExisting) {

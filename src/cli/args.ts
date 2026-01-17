@@ -45,12 +45,18 @@ function parseCommaSeparated(value: string): string[] {
  */
 // eslint-disable-next-line complexity
 export function parseArgs(args: string[]): CliArgs {
+  // Skip leading '--' delimiter (passed through by pnpm/npm)
+  let argsToProcess = args;
+  if (args[0] === '--') {
+    argsToProcess = args.slice(1);
+  }
+
   // Check if first non-flag argument is a command
   let command: Command = 'download';
   let startIndex = 0;
 
-  const firstArg = args[0];
-  if (args.length > 0 && firstArg !== undefined && firstArg !== '' && !firstArg.startsWith('-')) {
+  const firstArg = argsToProcess[0];
+  if (argsToProcess.length > 0 && firstArg !== undefined && firstArg !== '' && !firstArg.startsWith('-')) {
     const possibleCommand = firstArg.toLowerCase();
     if (possibleCommand === 'scrape') {
       command = 'scrape';
@@ -75,9 +81,9 @@ export function parseArgs(args: string[]): CliArgs {
     regionPriority: undefined as string[] | undefined,
   };
 
-  for (let i = startIndex; i < args.length; i++) {
-    const arg = args[i];
-    const next = args[i + 1];
+  for (let i = startIndex; i < argsToProcess.length; i++) {
+    const arg = argsToProcess[i];
+    const next = argsToProcess[i + 1];
 
     // Common arguments
     if (arg === '--dry-run' || arg === '-n') {

@@ -23,9 +23,9 @@ function formatDuration(ms: number): string {
 export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): string {
   const lines: string[] = [
     '',
-    chalk.magenta.bold('─'.repeat(50)),
+    chalk.cyan.bold('─'.repeat(50)),
     chalk.white.bold('Scrape Summary'),
-    chalk.magenta.bold('─'.repeat(50)),
+    chalk.cyan.bold('─'.repeat(50)),
     `  ${chalk.gray('Total ROMs:')}      ${chalk.white(summary.totalRoms)}`,
     `  ${chalk.gray('Downloaded:')}      ${chalk.green(summary.downloaded)}`,
     `  ${chalk.gray('Skipped:')}         ${chalk.yellow(summary.skipped)}`,
@@ -34,7 +34,7 @@ export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): st
     '',
     `  ${chalk.gray('Duration:')}        ${chalk.white(formatDuration(summary.elapsedMs))}`,
     `  ${chalk.gray('Output:')}          ${chalk.cyan(imgsDir)}`,
-    chalk.magenta.bold('─'.repeat(50)),
+    chalk.cyan.bold('─'.repeat(50)),
     '',
   ];
 
@@ -82,12 +82,12 @@ export function renderScrapeResult(result: ScrapeResult, index: number, total: n
 export function renderDryRunHeader(totalRoms: number, toScrape: number): string {
   const lines: string[] = [
     '',
-    chalk.magenta.bold('─'.repeat(50)),
+    chalk.cyan.bold('─'.repeat(50)),
     chalk.white.bold('Scrape Preview (Dry Run)'),
-    chalk.magenta.bold('─'.repeat(50)),
+    chalk.cyan.bold('─'.repeat(50)),
     `  ${chalk.gray('Total ROMs:')}      ${chalk.white(totalRoms)}`,
     `  ${chalk.gray('To scrape:')}       ${chalk.cyan(toScrape)}`,
-    chalk.magenta.bold('─'.repeat(50)),
+    chalk.cyan.bold('─'.repeat(50)),
     '',
   ];
 
