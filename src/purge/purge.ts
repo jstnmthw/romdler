@@ -1,0 +1,208 @@
+import path from 'path';
+import chalk from 'chalk';
+import type { Config } from '../config/index.js';
+import { parseFilterExpression, matchesExpression } from '../filter/index.js';
+import { safeDelete } from '../utils/index.js';
+import type { PurgeFileEntry, PurgeResult, PurgeSummary } from './types.js';
+import { scanDownloadDir } from './scanner.js';
+
+export type PurgeOptions = {
+  dryRun: boolean;
+  limit?: number;
+};
+
+/**
+ * Find files matching the blacklist
+ * @param files - Files to check
+ * @param blacklist - Blacklist filter strings
+ * @returns Files that match the blacklist (should be deleted)
+ */
+function findBlacklistedFiles(
+  files: PurgeFileEntry[],
+  blacklist: string[]
+): PurgeFileEntry[] {
+  if (blacklist.length === 0) {
+    return [];
+  }
+
+  const expression = parseFilterExpression(blacklist);
+
+  return files.filter((file) => {
+    // For purge, we only match against filename (no linkText available)
+    return matchesExpression(file.filename, expression);
+  });
+}
+
+/**
+ * Delete a single file
+ */
+async function deleteFile(file: PurgeFileEntry): Promise<PurgeResult> {
+  try {
+    await safeDelete(file.path);
+    return {
+      file,
+      status: 'deleted',
+    };
+  } catch (err) {
+    const error = err as Error;
+    return {
+      file,
+      status: 'failed',
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Print header for purge operation
+ */
+function printHeader(downloadDir: string, dryRun: boolean): void {
+  console.log('');
+  console.log(chalk.cyan.bold('Purge Blacklisted Files'));
+  console.log(chalk.gray('─'.repeat(40)));
+
+  if (dryRun) {
+    console.log(chalk.yellow.bold('[DRY RUN] No files will be deleted'));
+    console.log('');
+  }
+
+  console.log(`${chalk.gray('Directory:')} ${chalk.white(downloadDir)}`);
+}
+
+/**
+ * Print dry-run preview of files to delete
+ */
+function printDryRunPreview(files: PurgeFileEntry[]): PurgeResult[] {
+  console.log(chalk.white('Files that would be deleted:'));
+  for (const file of files) {
+    console.log(`  ${chalk.red('x')} ${file.filename}`);
+  }
+  console.log('');
+
+  return files.map((file) => ({
+    file,
+    status: 'skipped' as const,
+  }));
+}
+
+/**
+ * Delete files and print progress
+ */
+async function deleteFiles(files: PurgeFileEntry[]): Promise<PurgeResult[]> {
+  const results: PurgeResult[] = [];
+  const total = files.length;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (file === undefined) {
+      continue;
+    }
+
+    const result = await deleteFile(file);
+    results.push(result);
+
+    const prefix = chalk.gray(`[${String(i + 1).padStart(String(total).length)}/${total}]`);
+    if (result.status === 'deleted') {
+      console.log(`${prefix} ${chalk.red('x')} ${result.file.filename}`);
+    } else {
+      console.log(`${prefix} ${chalk.red('!')} ${result.file.filename} ${chalk.red(`(${result.error ?? 'unknown error'})`)}`);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Calculate summary from purge results
+ */
+function calculateSummary(
+  totalScanned: number,
+  results: PurgeResult[]
+): PurgeSummary {
+  return {
+    totalScanned,
+    matchedBlacklist: results.length,
+    deleted: results.filter((r) => r.status === 'deleted').length,
+    failed: results.filter((r) => r.status === 'failed').length,
+  };
+}
+
+/**
+ * Print purge summary
+ */
+function printSummary(summary: PurgeSummary): void {
+  console.log('');
+  console.log(chalk.gray('─'.repeat(40)));
+  console.log(chalk.white.bold('Summary'));
+  console.log(`  ${chalk.gray('Scanned:')}  ${chalk.white(summary.totalScanned)}`);
+  console.log(`  ${chalk.gray('Matched:')}  ${chalk.red(summary.matchedBlacklist)}`);
+  console.log(`  ${chalk.gray('Deleted:')}  ${chalk.red(summary.deleted)}`);
+  if (summary.failed > 0) {
+    console.log(`  ${chalk.gray('Failed:')}   ${chalk.red(summary.failed)}`);
+  }
+  console.log('');
+}
+
+/**
+ * Run the purge command
+ * @param config - Application configuration
+ * @param options - Purge options
+ * @returns Array of purge results
+ */
+export async function runPurge(
+  config: Config,
+  options: PurgeOptions
+): Promise<PurgeResult[]> {
+  const downloadDir = path.resolve(config.downloadDir);
+
+  printHeader(downloadDir, options.dryRun);
+
+  // Scan for files
+  const files = await scanDownloadDir(downloadDir);
+
+  if (files.length === 0) {
+    console.log(chalk.yellow('No files found in directory.'));
+    return [];
+  }
+
+  console.log(`${chalk.gray('Files found:')} ${chalk.white(files.length)}`);
+
+  // Check for empty blacklist
+  if (config.blacklist.length === 0) {
+    console.log(chalk.yellow('Blacklist is empty. No files to purge.'));
+    return [];
+  }
+
+  console.log(`${chalk.gray('Blacklist patterns:')} ${chalk.white(config.blacklist.length)}`);
+
+  // Find blacklisted files
+  let blacklistedFiles = findBlacklistedFiles(files, config.blacklist);
+
+  if (blacklistedFiles.length === 0) {
+    console.log(chalk.green('No files match the blacklist.'));
+    return [];
+  }
+
+  // Apply limit if specified
+  if (options.limit !== undefined && options.limit > 0 && options.limit < blacklistedFiles.length) {
+    console.log(`${chalk.gray('Limiting to:')} ${chalk.white(options.limit)} files`);
+    blacklistedFiles = blacklistedFiles.slice(0, options.limit);
+  }
+
+  console.log(`${chalk.gray('Matched:')} ${chalk.red(blacklistedFiles.length)} files`);
+  console.log('');
+
+  // Dry-run mode: show preview and exit
+  if (options.dryRun) {
+    return printDryRunPreview(blacklistedFiles);
+  }
+
+  // Perform actual deletion
+  const results = await deleteFiles(blacklistedFiles);
+
+  // Print summary
+  const summary = calculateSummary(files.length, results);
+  printSummary(summary);
+
+  return results;
+}

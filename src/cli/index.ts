@@ -5,4 +5,5 @@ export {
   type BaseCliArgs,
   type DownloadCliArgs,
   type ScrapeCliArgs,
+  type PurgeCliArgs,
 } from './args.js';

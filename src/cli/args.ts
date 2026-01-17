@@ -1,5 +1,5 @@
 /** Command mode for the CLI */
-export type Command = 'download' | 'scrape';
+export type Command = 'download' | 'scrape' | 'purge';
 
 /** Base CLI arguments shared by all commands */
 export interface BaseCliArgs {
@@ -22,8 +22,13 @@ export interface ScrapeCliArgs extends BaseCliArgs {
   regionPriority?: string[];
 }
 
+/** CLI arguments for purge command */
+export interface PurgeCliArgs extends BaseCliArgs {
+  command: 'purge';
+}
+
 /** Union type for all CLI args */
-export type CliArgs = DownloadCliArgs | ScrapeCliArgs;
+export type CliArgs = DownloadCliArgs | ScrapeCliArgs | PurgeCliArgs;
 
 function isValidArgValue(value: string | undefined): value is string {
   return value !== undefined && !value.startsWith('-');
@@ -63,6 +68,9 @@ export function parseArgs(args: string[]): CliArgs {
       startIndex = 1;
     } else if (possibleCommand === 'download') {
       command = 'download';
+      startIndex = 1;
+    } else if (possibleCommand === 'purge') {
+      command = 'purge';
       startIndex = 1;
     }
   }
@@ -112,6 +120,13 @@ export function parseArgs(args: string[]): CliArgs {
       command: 'scrape',
       ...baseArgs,
       ...scrapeArgs,
+    };
+  }
+
+  if (command === 'purge') {
+    return {
+      command: 'purge',
+      ...baseArgs,
     };
   }
 
