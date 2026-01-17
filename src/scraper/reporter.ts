@@ -22,53 +22,30 @@ function formatDuration(ms: number): string {
  * Render scrape summary to console
  */
 export function renderScrapeSummary(summary: ScrapeSummary, imgsDir: string): string {
-  // Calculate exact matches (downloaded minus best-effort)
-  const exactMatches = summary.downloaded - summary.bestEffort;
+  const boxWidth = 56;
+  const title = 'Scrape Summary';
+  const titlePadded = `  ${title}`.padEnd(boxWidth);
 
   const lines: string[] = [
     '',
-    chalk.cyan.bold('─'.repeat(50)),
-    chalk.white.bold('Scrape Summary'),
-    chalk.cyan.bold('─'.repeat(50)),
+    chalk.cyan.bold(`╔${'═'.repeat(boxWidth)}╗`),
+    chalk.cyan.bold('║') + chalk.white.bold(titlePadded) + chalk.cyan.bold('║'),
+    chalk.cyan.bold(`╚${'═'.repeat(boxWidth)}╝`),
+    '',
     `  ${chalk.gray('Total ROMs:')}      ${chalk.white(summary.totalRoms)}`,
     `  ${chalk.gray('Downloaded:')}      ${chalk.green(summary.downloaded)}`,
   ];
 
-  // Show breakdown of exact vs best-effort if there are any best-effort matches
-  if (summary.bestEffort > 0) {
-    lines.push(`    ${chalk.gray('Exact:')}          ${chalk.green(exactMatches)}`);
-    lines.push(`    ${chalk.gray('Best effort:')}    ${chalk.hex('#FFA500')(summary.bestEffort)}`);
-  }
-
   lines.push(
     `  ${chalk.gray('Skipped:')}         ${chalk.yellow(summary.skipped)}`,
     `  ${chalk.gray('Not found:')}       ${chalk.blue(summary.notFound)}`,
+    `  ${chalk.gray('Best effort:')}     ${summary.bestEffort > 0 ? chalk.hex('#FFA500')(summary.bestEffort) : chalk.white(summary.bestEffort)}`,
     `  ${chalk.gray('Failed:')}          ${summary.failed > 0 ? chalk.red(summary.failed) : chalk.white(summary.failed)}`,
-    '',
     `  ${chalk.gray('Duration:')}        ${chalk.white(formatDuration(summary.elapsedMs))}`,
     `  ${chalk.gray('Output:')}          ${chalk.cyan(imgsDir)}`,
-    chalk.cyan.bold('─'.repeat(50)),
     ''
   );
 
-  if (summary.failed > 0) {
-    lines.push(chalk.red('Some images failed to download. Check the logs above for details.'));
-    lines.push('');
-  }
-
-  if (summary.notFound > 0) {
-    lines.push(chalk.blue(`${summary.notFound} ROMs had no matching artwork found.`));
-    lines.push('');
-  }
-
-  if (summary.bestEffort > 0) {
-    lines.push(
-      chalk.hex('#FFA500')(
-        `${summary.bestEffort} images used best-effort matching (filename variants).`
-      )
-    );
-    lines.push('');
-  }
 
   return lines.join('\n');
 }
@@ -78,34 +55,35 @@ const amber = chalk.hex('#FFA500');
 
 /**
  * Render a single scrape result for logging
+ * Format: [index/total] icon filename → gameName size
  */
 export function renderScrapeResult(result: ScrapeResult, index: number, total: number): string {
-  const prefix = chalk.gray(`[${index + 1}/${total}]`);
+  const counter = chalk.gray(`[${String(index + 1).padStart(String(total).length)}/${total}]`);
   const filename = result.rom.filename;
 
   switch (result.status) {
     case 'downloaded': {
       const sizeStr =
-        result.imageSize !== undefined ? chalk.green(formatBytes(result.imageSize)) : '';
+        result.imageSize !== undefined ? ` ${chalk.green(formatBytes(result.imageSize))}` : '';
       if (result.bestEffort === true) {
         // Best-effort match: show in amber with size
-        return `${prefix} ${amber('~')} ${filename} ${chalk.gray('→')} ${amber(result.gameName ?? 'Unknown')} ${sizeStr} ${chalk.gray('(best effort)')}`;
+        return `${counter} ${amber('~')} ${filename} ${chalk.gray('→')} ${amber(result.gameName ?? 'Unknown')}${sizeStr} ${chalk.gray('(best effort)')}`;
       }
       // Exact match: show in green with size
-      return `${prefix} ${chalk.green('✓')} ${filename} ${chalk.gray('→')} ${chalk.cyan(result.gameName ?? 'Unknown')} ${sizeStr}`;
+      return `${counter} ${chalk.green('✓')} ${filename} ${chalk.gray('→')} ${result.gameName ?? 'Unknown'}${sizeStr}`;
     }
 
     case 'skipped':
-      return `${prefix} ${chalk.yellow('○')} ${filename} ${chalk.gray('(already exists)')}`;
+      return `${counter} ${chalk.yellow('○')} ${filename} ${chalk.gray('(already exists)')}`;
 
     case 'not_found':
-      return `${prefix} ${chalk.blue('?')} ${filename} ${chalk.gray('(not in database)')}`;
+      return `${counter} ${chalk.blue('?')} ${filename} ${chalk.gray('(not in database)')}`;
 
     case 'failed':
-      return `${prefix} ${chalk.red('✗')} ${filename} ${chalk.gray('-')} ${chalk.red(result.error ?? 'Unknown error')}`;
+      return `${counter} ${chalk.red('✗')} ${filename} ${chalk.gray('-')} ${chalk.red(result.error ?? 'Unknown error')}`;
 
     default:
-      return `${prefix} ${chalk.gray('·')} ${filename}`;
+      return `${counter} ${chalk.gray('·')} ${filename}`;
   }
 }
 

@@ -3,8 +3,7 @@ import chalk from 'chalk';
 const VERSION = '1.0.0';
 
 function createBanner(subtitle: string): string {
-  return `
-${chalk.cyan.bold('╔════════════════════════════════════════════════════════╗')}
+  return `${chalk.cyan.bold('╔════════════════════════════════════════════════════════╗')}
 ${chalk.cyan.bold('║')}  ${chalk.white.bold('ROMDLER')} ${chalk.gray(`v${VERSION}`)}                                        ${chalk.cyan.bold('║')}
 ${chalk.cyan.bold('║')}  ${chalk.gray(subtitle.padEnd(54))}${chalk.cyan.bold('║')}
 ${chalk.cyan.bold('╚════════════════════════════════════════════════════════╝')}

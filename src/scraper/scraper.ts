@@ -143,10 +143,6 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
     throw new Error('No artwork sources could be initialized. Check your configuration.');
   }
 
-  // Log active sources
-  const sourceNames = initializedSources.map((s) => s.id).join(', ');
-  console.log(chalk.white.bold(`Sources: ${chalk.cyan(sourceNames)}`));
-
   // Process each system
   for (const systemConfig of config.systems) {
     const system = resolveSystemConfig(systemConfig, config);
@@ -178,8 +174,6 @@ async function scrapeSystem(
   const results: ScrapeResult[] = [];
   const systemId = system.systemId;
 
-  console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
-
   const mediaType = options.mediaType ?? config.scraper?.mediaType ?? 'box-2D';
   const regionPriority = options.regionPriority ??
     config.scraper?.regionPriority ?? ['us', 'wor', 'eu', 'jp'];
@@ -199,24 +193,28 @@ async function scrapeSystem(
   // Scan for ROMs
   const downloadDir = path.resolve(system.downloadDir);
   const imgsDir = getImgsDirectory(downloadDir);
-
-  console.log(chalk.white.bold(`Directory: ${chalk.cyan(downloadDir)}`));
   const roms = await scanForRoms(downloadDir, extensions);
+
+  // Print header
+  const sourceNames = initializedSources.map((s) => s.id).join(', ');
+  console.log(`  ${chalk.gray('Sources:')} ${chalk.cyan(sourceNames)}`);
+  console.log(`  ${chalk.gray('Console:')} ${chalk.white(system.name)}`);
+  console.log(`  ${chalk.gray('Directory:')} ${chalk.cyan(downloadDir)}`);
 
   if (roms.length === 0) {
     console.log(`  ${chalk.red('✗')} No ROM files found.`);
     return [];
   }
 
-  console.log(`  ${chalk.green('✔')} Found ${chalk.white(roms.length)} ROM files`);
+  console.log(
+    `  ${chalk.gray('Found:')} ${chalk.white(roms.length)} ROM files ${chalk.green('✔')}`
+  );
 
   // Apply limit if specified
   let romsToProcess = roms;
   if (options.limit !== undefined && options.limit > 0 && options.limit < roms.length) {
     romsToProcess = roms.slice(0, options.limit);
-    console.log(`  Limited to: ${chalk.yellow(options.limit)} ROMs`);
   }
-  console.log('');
 
   // Check for existing images if skipExisting is enabled
   if (skipExisting) {
