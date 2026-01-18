@@ -2,6 +2,28 @@
 
 Downloads ZIP files from HTML table directory listings with streaming, atomic writes, and retry logic.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [CLI Options](#cli-options)
+- [Configuration](#configuration)
+  - [System Configuration](#system-configuration)
+  - [Global Settings](#global-settings)
+  - [Default Settings](#default-settings)
+- [How It Works](#how-it-works)
+  - [Download Flow](#download-flow)
+  - [Streaming Downloads](#streaming-downloads)
+  - [Atomic Writes](#atomic-writes)
+  - [Skip Detection](#skip-detection)
+  - [Retry Logic](#retry-logic)
+  - [Concurrent Downloads](#concurrent-downloads)
+- [Output](#output)
+- [Types](#types)
+- [Directory Structure](#directory-structure)
+- [Security](#security)
+- [Exit Codes](#exit-codes)
+- [See Also](#see-also)
+
 ## Quick Start
 
 The downloader is the default command. It processes all systems defined in your `app.config.json`, parsing HTML directory listings and downloading matching files:
@@ -63,6 +85,7 @@ Each system in the `systems` array requires:
 | `tableId` | `string` | No | Override default table ID |
 | `whitelist` | `string[]` | No | Override default whitelist |
 | `blacklist` | `string[]` | No | Override default blacklist |
+| `dedupe` | `object` | No | Override default dedupe preferences |
 
 ### Global Settings
 
@@ -86,6 +109,7 @@ Settings in `defaults` are inherited by all systems unless overridden:
 | `tableId` | `string` | `"list"` | HTML table ID containing the file list |
 | `whitelist` | `string[]` | `[]` | Only download files matching these terms |
 | `blacklist` | `string[]` | `[]` | Exclude files matching these terms |
+| `dedupe` | `object` | - | Deduplication preferences (see dedupe module) |
 
 ## How It Works
 
@@ -217,12 +241,12 @@ Each file results in one of three statuses:
 Configuration passed to download functions:
 
 ```typescript
-type DownloadOptions = {
+interface DownloadOptions {
   userAgent: string;      // User-Agent header
   timeoutMs: number;      // Request timeout
   retries: number;        // Retry attempts
   downloadDir: string;    // Destination directory
-};
+}
 ```
 
 ### DownloadResult
@@ -230,13 +254,13 @@ type DownloadOptions = {
 Result returned for each file:
 
 ```typescript
-type DownloadResult = {
+interface DownloadResult {
   filename: string;       // Name of the file
   url: string;            // Source URL
   status: DownloadStatus; // 'downloaded' | 'skipped' | 'failed'
   bytesDownloaded: number; // Bytes transferred (0 if skipped/failed)
   error?: string;         // Error message if failed
-};
+}
 ```
 
 ### DownloadProgress
@@ -244,12 +268,28 @@ type DownloadResult = {
 Progress callback data (sequential mode only):
 
 ```typescript
-type DownloadProgress = {
+interface DownloadProgress {
   filename: string;           // Current file
   bytesDownloaded: number;    // Bytes transferred so far
   totalBytes: number | null;  // Total size (null if unknown)
   percentage: number | null;  // 0-100 (null if size unknown)
-};
+}
+```
+
+### DownloadStatus
+
+Status enum for download results:
+
+```typescript
+type DownloadStatus = 'downloaded' | 'skipped' | 'failed';
+```
+
+### ProgressCallback
+
+Callback type for progress updates:
+
+```typescript
+type ProgressCallback = (progress: DownloadProgress) => void;
 ```
 
 ## Directory Structure
@@ -257,13 +297,15 @@ type DownloadProgress = {
 ```
 src/downloader/
 ├── downloader.ts    # Main implementation
-│                    # - downloadFile(): Single file download
-│                    # - downloadSequential(): One at a time
-│                    # - downloadConcurrent(): Parallel downloads
+│                    # - downloadFile(): Single file with streaming
+│                    # - downloadSequential(): Sequential with progress
+│                    # - downloadConcurrent(): Parallel worker pool
 ├── types.ts         # Type definitions
 │                    # - DownloadOptions, DownloadResult
 │                    # - DownloadProgress, ProgressCallback
-└── index.ts         # Module exports
+│                    # - DownloadStatus
+├── index.ts         # Barrel exports
+└── README.md        # This file
 ```
 
 ## Security
@@ -285,3 +327,16 @@ Internal modules used:
 | `../utils` | Path sanitization, atomic file operations |
 
 No external dependencies beyond Node.js built-ins (`node:fs`, `node:stream`, `node:path`).
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success - all files downloaded or skipped |
+| `1` | Failure - at least one download failed, or fatal error |
+
+## See Also
+
+- [Scraper README](../scraper/README.md) - Download cover art for your ROMs
+- [Purge README](../purge/README.md) - Remove unwanted files using blacklist patterns
+- [Main README](../../README.md) - Full configuration reference

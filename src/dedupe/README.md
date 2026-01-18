@@ -2,6 +2,28 @@
 
 The dedupe module identifies and removes duplicate ROM files using preference-based selection. It groups files by title, then picks the best version from each group based on configurable preferences. Removed files are moved to a `deleted/` subfolder for safe recovery.
 
+## Table of Contents
+
+- [Usage](#usage)
+- [How It Works](#how-it-works)
+  - [Algorithm](#algorithm)
+  - [Preference-Based Selection](#preference-based-selection)
+- [Configuration](#configuration)
+  - [Options](#options)
+  - [Default Avoid List](#default-avoid-list)
+  - [Multi-Region Support](#multi-region-support)
+  - [Region Codes](#region-codes)
+- [Example](#example)
+  - [Input Files](#input-files)
+  - [Output Structure](#output-structure)
+  - [Console Output](#console-output)
+- [CLI Options](#cli-options)
+- [Module Structure](#module-structure)
+- [Types](#types)
+- [Base Signature](#base-signature)
+- [Recovery](#recovery)
+- [Exit Codes](#exit-codes)
+
 ## Usage
 
 ```bash
@@ -212,6 +234,14 @@ type DedupeResult = {
   file: DedupeRomFile;
   status: 'removed' | 'kept' | 'failed';
   error?: string;
+};
+
+type DedupeSummary = {
+  totalScanned: number;        // Total files scanned
+  groupsWithDuplicates: number; // Number of groups with duplicates
+  removed: number;             // Files removed
+  kept: number;                // Files kept
+  failed: number;              // Files that failed to remove
 };
 ```
 

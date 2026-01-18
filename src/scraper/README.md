@@ -2,6 +2,41 @@
 
 Downloads cover art for your files using multiple sources with fallback support.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Sources](#sources)
+  - [Libretro Thumbnails](#libretro-thumbnails-default)
+  - [ScreenScraper](#screenscraper)
+- [Best-Effort Matching](#best-effort-matching)
+  - [How It Works](#how-it-works)
+  - [Matching Priority](#matching-priority)
+  - [Variant Patterns Stripped](#variant-patterns-stripped)
+  - [Region Priority](#region-priority)
+  - [Console Output](#console-output)
+  - [Summary Breakdown](#summary-breakdown)
+  - [Examples](#examples)
+- [Configuration](#configuration)
+  - [System Shortcodes](#system-shortcodes)
+  - [Scraper Options](#scraper-options)
+  - [Libretro Configuration](#libretro-configuration)
+  - [ScreenScraper Configuration](#screenscraper-configuration)
+  - [Resize Options](#resize-options)
+- [Media Types](#media-types)
+- [CLI Options](#cli-options)
+- [Output](#output)
+- [Architecture](#architecture)
+  - [Main Scraper Flow](#main-scraper-flow)
+  - [Adapter Fallback Chain](#adapter-fallback-chain)
+  - [Libretro Manifest Fetching](#libretro-manifest-fetching)
+  - [Libretro Filename Matching](#libretro-filename-matching)
+  - [ScreenScraper Lookup](#screenscraper-lookup)
+  - [Directory Structure](#directory-structure)
+- [Types](#types)
+- [Adding New Adapters](#adding-new-adapters)
+- [Exit Codes](#exit-codes)
+- [See Also](#see-also)
+
 ## Quick Start
 
 The scraper processes all systems defined in your `app.config.json`. Each system uses a shortcode that automatically maps to the correct system name and ID:
@@ -70,9 +105,9 @@ This approach is **much faster** than per-file HTTP requests because all matchin
 
 | Priority | Match Type | Example |
 |----------|-----------|---------|
-| 1 | Exact match | `Game (USA)` → `Game (USA)` |
-| 2 | Variant-stripped (keep region) | `Game (USA) (Proto)` → `Game (USA)` |
-| 3 | Title-only (best region match) | `Game (USA)` → `Game (World)` |
+| 1 | Exact match | `Game (USA)` -> `Game (USA)` |
+| 2 | Variant-stripped (keep region) | `Game (USA) (Proto)` -> `Game (USA)` |
+| 3 | Title-only (best region match) | `Game (USA)` -> `Game (World)` |
 
 ### Variant Patterns Stripped
 
@@ -102,9 +137,9 @@ When multiple candidates match by title, the best region is selected:
 Best-effort matches are displayed in **amber/orange** to distinguish them from exact matches:
 
 ```
-[1/100] ✓ Game (USA).zip → Game (USA)                         # Exact (green)
-[2/100] ~ Game (USA) (Proto).zip → Game (USA) (best effort)   # Best-effort (amber)
-[3/100] ? Unknown Game.zip (not in database)                  # Not found (blue)
+[1/100] + Game (USA).zip -> Game (USA)                         # Exact (green)
+[2/100] ~ Game (USA) (Proto).zip -> Game (USA) (best effort)   # Best-effort (amber)
+[3/100] ? Unknown Game.zip (not in database)                   # Not found (blue)
 ```
 
 ### Summary Breakdown
@@ -112,9 +147,9 @@ Best-effort matches are displayed in **amber/orange** to distinguish them from e
 The scrape summary shows a breakdown of exact vs best-effort matches:
 
 ```
-──────────────────────────────────────────────────
+--------------------------------------------------
 Scrape Summary
-──────────────────────────────────────────────────
+--------------------------------------------------
   Total ROMs:      100
   Downloaded:      85
     Exact:         75
@@ -122,7 +157,7 @@ Scrape Summary
   Skipped:         10
   Not found:       5
   Failed:          0
-──────────────────────────────────────────────────
+--------------------------------------------------
 
 10 images used best-effort matching (filename variants).
 ```
@@ -142,6 +177,8 @@ Scrape Summary
 ### System Shortcodes
 
 Use shortcodes in the `system` field. Each shortcode automatically maps to the correct system name and ID. See the main [README.md](../../README.md#system-shortcodes) for the complete list.
+
+For custom systems not in the registry, see `customSystems` in the main [README.md](../../README.md#custom-systems).
 
 ### Scraper Options
 
@@ -180,7 +217,7 @@ Libretro is **enabled by default** with priority 1. No configuration needed unle
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `true` | Enable Libretro adapter |
-| `priority` | `number` | `1` | Priority (lower = tried first) |
+| `priority` | `number` | `1` | Priority (lower = tried first, range 1-100) |
 
 ### ScreenScraper Configuration
 
@@ -205,9 +242,9 @@ ScreenScraper is **disabled by default**. Enable it with credentials for fallbac
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `false` | Enable ScreenScraper adapter |
-| `priority` | `number` | `2` | Priority (lower = tried first) |
+| `priority` | `number` | `2` | Priority (lower = tried first, range 1-100) |
 | `credentials` | `object` | - | API credentials (required if enabled) |
-| `rateLimitMs` | `number` | `1000` | Delay between API requests (ms) |
+| `rateLimitMs` | `number` | `1000` | Delay between API requests (ms, range 100-10000) |
 
 #### Getting ScreenScraper Credentials
 
@@ -237,28 +274,6 @@ Resize is **disabled by default**. Enable it to resize downloaded images:
 | `maxWidth` | `number` | `300` | Maximum width in pixels (100-1000) |
 | `maxHeight` | `number` | `300` | Maximum height in pixels (100-1000) |
 
-## System Shortcodes
-
-Shortcodes are designed to match **Anbernic folder names** for easy compatibility.
-
-Common shortcodes:
-
-| Category | Shortcodes |
-|----------|------------|
-| **Nintendo** | `gb`, `gbc`, `gba`, `nds`, `vb`, `gw`, `poke`/`pokemini`, `nes`/`fc`, `fds`, `snes`/`sfc`, `n64` |
-| **Sega** | `sms`, `gg`, `md`/`genesis`, `mdcd`/`scd`/`segacd`, `32x`, `saturn`, `dreamcast`/`dc`, `pico`, `naomi` |
-| **Sony** | `ps`/`psx`/`ps1`, `psp` |
-| **Atari** | `atari`/`2600`, `a5200`/`5200`, `a7800`/`7800`, `a800`, `lynx` |
-| **Arcade** | `mame`/`arcade`, `fbneo`, `hbmame`, `cps1`, `cps2`, `cps3`, `neogeo`, `atomiswave` |
-| **NEC** | `pce`/`tg16`, `pcecd` |
-| **SNK** | `neogeo`, `ngp`/`ngpc` |
-| **Bandai** | `ws`/`wsc` |
-| **Other** | `coleco`, `intv`, `c64`, `msx`, `dos`, `easyrpg`, `openbor` |
-
-For the full list with all aliases, see [`src/systems/definitions.ts`](../systems/definitions.ts).
-
-For custom systems not in the registry, see `customSystems` in the main [README.md](../../README.md#custom-systems).
-
 ## Media Types
 
 Media type availability depends on the source adapter:
@@ -276,7 +291,7 @@ Media type availability depends on the source adapter:
 | `fanart` | Fan artwork | No | Yes |
 | `video` | Video preview | No | Yes |
 
-**Note:** Libretro also accepts aliases: `boxart` (for `box-2D`), `snap`/`screenshot` (for `ss`), `title` (for `sstitle`).
+**Libretro aliases:** `boxart` (for `box-2D`), `snap`/`screenshot` (for `ss`), `title` (for `sstitle`).
 
 ## CLI Options
 
@@ -439,6 +454,83 @@ src/scraper/
 └── index.ts            # Module exports
 ```
 
+## Types
+
+### RomFile
+
+Information about a ROM file to scrape:
+
+```typescript
+type RomFile = {
+  /** Absolute path to the file */
+  path: string;
+  /** Filename with extension */
+  filename: string;
+  /** Filename without extension (stem) */
+  stem: string;
+  /** File size in bytes */
+  size: number;
+};
+```
+
+### ArtworkLookupResult
+
+Result from an artwork lookup:
+
+```typescript
+type ArtworkLookupResult = {
+  found: boolean;
+  /** Game identifier from the source */
+  gameId?: string;
+  /** Game name from the source */
+  gameName?: string;
+  /** Direct URL to download the media */
+  mediaUrl?: string;
+  /** Source-specific metadata */
+  metadata?: Record<string, unknown>;
+  /** True if this was a fuzzy/best-effort match (not exact) */
+  bestEffort?: boolean;
+  /** The original ROM name before transformation (for best-effort matches) */
+  originalName?: string;
+};
+```
+
+### LookupParams
+
+Parameters for artwork lookup:
+
+```typescript
+type LookupParams = {
+  /** ROM file information */
+  rom: RomFile;
+  /** CRC32 hash (if calculated) */
+  crc?: string;
+  /** System/platform identifier */
+  systemId: number;
+  /** Preferred media type */
+  mediaType: string;
+  /** Region priority for media selection */
+  regionPriority: string[];
+};
+```
+
+### AdapterCapabilities
+
+Capabilities a source adapter supports:
+
+```typescript
+type AdapterCapabilities = {
+  /** Supports hash-based ROM identification */
+  hashLookup: boolean;
+  /** Supports filename-based lookup */
+  filenameLookup: boolean;
+  /** Media types available (source-specific identifiers) */
+  mediaTypes: string[];
+  /** Platform system IDs supported, or 'all' for universal support */
+  platforms: number[] | 'all';
+};
+```
+
 ## Adding New Adapters
 
 1. Create a new directory: `src/scraper/newadapter/`
@@ -447,4 +539,15 @@ src/scraper/
 4. Register in `scraper.ts`
 5. Add config schema in `src/config/schema.ts`
 
-See [docs/ARTWORK_ADAPTER_PATTERN.md](../../docs/ARTWORK_ADAPTER_PATTERN.md) for the full design document.
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success - all images downloaded or skipped |
+| `1` | Failure - at least one download failed, or fatal error |
+
+## See Also
+
+- [Downloader README](../downloader/README.md) - Download ROM files from archive sites
+- [Purge README](../purge/README.md) - Remove unwanted files using blacklist patterns
+- [Main README](../../README.md) - Full configuration reference
