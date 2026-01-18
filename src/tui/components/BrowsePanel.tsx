@@ -1,21 +1,19 @@
 /**
  * BrowsePanel component
  * Tabbed panel with Files and Log views, plus progress bar
- * Layout: ┌───Browse────────────────────────────────────────────────────────────┐
- *         │                Files (w)         |         Log (q)                  │
- *         ├─────────────────────────────────────────────────────────────────────┤
- *         │  ↷ 2001 FIFA World Cup - Germany 2001.zip skipped                  █
- *         │  ✔ 2K Sports - Major League Baseball 2K7 (USA).zip 1.2mb           ░
- *         │  ... scrollable content ...                                         ░
- *         ├─────────────────────────────────────────────────────────────────────┤
- *         │   Downloading 2K Sports - Major League Baseball (US..               │
- *         │   █████████████░░░░░░░| 67% | 1.2 MB/1.8 MB | 11.9 MB/s | 5/20      │
- *         └─────────────────────────────────────────────────────────────────────┘
  */
 
 import { Box, Text, useInput } from 'ink';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../theme/index.js';
+import type { ThemeTokens } from '../theme/index.js';
+import {
+  getNavDirection,
+  calculateScrollNav,
+  calculateScrollbar,
+  getScrollbarChar,
+  cycleValue,
+} from '../hooks/index.js';
 
 /** Log entry for display */
 export type LogItem = {
@@ -48,59 +46,207 @@ export type DownloadInfo = {
 };
 
 type BrowsePanelProps = {
-  /** Currently active tab */
   activeTab: 'files' | 'log';
-  /** Called when tab changes */
   onTabChange: (tab: 'files' | 'log') => void;
-  /** Log entries */
   logItems: LogItem[];
-  /** File entries */
   fileItems: FileItem[];
-  /** Current download progress (null if not downloading) */
   downloadProgress: DownloadInfo | null;
-  /** Whether this panel is focused */
   isFocused?: boolean;
-  /** Max visible rows in scrollable area */
   maxRows?: number;
-  /** Current sort field for files */
   sortField?: FileSortField;
-  /** Current sort direction for files */
   sortDirection?: FileSortDirection;
-  /** Called when sort changes */
   onSortChange?: (field: FileSortField) => void;
 };
 
-/** Get status icon */
-function getStatusIcon(status: LogItem['status']): string {
-  switch (status) {
-    case 'downloaded':
-      return '✔';
-    case 'skipped':
-      return '↷';
-    case 'failed':
-      return '✖';
-    case 'info':
-      return 'ℹ';
-    default:
-      return ' ';
-  }
+/** Status icon mapping */
+const STATUS_ICONS: Record<LogItem['status'], string> = {
+  downloaded: '✔',
+  skipped: '↷',
+  failed: '✖',
+  info: 'ℹ',
+};
+
+/** Get color for log status */
+function getStatusColor(status: LogItem['status'], theme: ThemeTokens): string {
+  const colorMap: Record<LogItem['status'], string> = {
+    downloaded: theme.complete,
+    skipped: theme.skipped,
+    failed: theme.failed,
+    info: theme.info,
+  };
+  return colorMap[status];
 }
 
-/**
- * Tabbed browse panel with Files/Log views
- */
 /** Get sort indicator arrow */
 function getSortIndicator(
   field: FileSortField,
   currentField: FileSortField,
   direction: FileSortDirection
 ): string {
-  if (field !== currentField) {
-    return ' ';
-  }
+  if (field !== currentField) {return ' ';}
   return direction === 'asc' ? '▲' : '▼';
 }
 
+/** Sort field order for cycling */
+const SORT_FIELDS: readonly FileSortField[] = ['name', 'size', 'date'];
+
+/** Log view sub-component */
+function LogView({
+  items,
+  scrollOffset,
+  contentHeight,
+  scrollbar,
+  theme,
+}: {
+  items: LogItem[];
+  scrollOffset: number;
+  contentHeight: number;
+  scrollbar: { hasScrollbar: boolean; thumbSize: number; thumbPosition: number };
+  theme: ThemeTokens;
+}): React.JSX.Element {
+  if (items.length === 0) {
+    return (
+      <Box marginY={1} width="100%">
+        <Text color={theme.muted}>No log entries yet</Text>
+      </Box>
+    );
+  }
+
+  const visibleItems = items.slice(scrollOffset, scrollOffset + contentHeight);
+
+  return (
+    <>
+      {visibleItems.map((item, viewIndex) => (
+        <Box key={item.id} width="100%">
+          <Box flexGrow={1}>
+            <Text color={getStatusColor(item.status, theme)}>{STATUS_ICONS[item.status]} </Text>
+            <Text color={theme.foreground}>
+              {item.message}
+              {item.size !== undefined && item.size !== '' && (
+                <Text color={theme.muted}> {item.size}</Text>
+              )}
+            </Text>
+          </Box>
+          {scrollbar.hasScrollbar && (
+            <Text color={theme.muted}>
+              {getScrollbarChar(viewIndex, scrollbar.thumbPosition, scrollbar.thumbSize)}
+            </Text>
+          )}
+        </Box>
+      ))}
+    </>
+  );
+}
+
+/** Files view sub-component */
+function FilesView({
+  items,
+  scrollOffset,
+  contentHeight,
+  scrollbar,
+  sortField,
+  sortDirection,
+  theme,
+}: {
+  items: FileItem[];
+  scrollOffset: number;
+  contentHeight: number;
+  scrollbar: { hasScrollbar: boolean; thumbSize: number; thumbPosition: number };
+  sortField: FileSortField;
+  sortDirection: FileSortDirection;
+  theme: ThemeTokens;
+}): React.JSX.Element {
+  const visibleItems = items.slice(scrollOffset, scrollOffset + contentHeight);
+
+  return (
+    <Box flexDirection="column" width="100%">
+      {/* Sort headers */}
+      <Box marginBottom={0} width="100%">
+        <Box flexGrow={1}>
+          <Text color={sortField === 'name' ? theme.primary : theme.muted} bold={sortField === 'name'}>
+            Name {getSortIndicator('name', sortField, sortDirection)}
+          </Text>
+        </Box>
+        <Box width={10}>
+          <Text color={sortField === 'size' ? theme.primary : theme.muted} bold={sortField === 'size'}>
+            Size {getSortIndicator('size', sortField, sortDirection)}
+          </Text>
+        </Box>
+        <Box width={12}>
+          <Text color={sortField === 'date' ? theme.primary : theme.muted} bold={sortField === 'date'}>
+            Date {getSortIndicator('date', sortField, sortDirection)}
+          </Text>
+        </Box>
+        {scrollbar.hasScrollbar && <Text color={theme.muted}> </Text>}
+      </Box>
+      {items.length === 0 ? (
+        <Box marginY={1} width="100%">
+          <Text color={theme.muted}>Select a directory to view files</Text>
+        </Box>
+      ) : (
+        visibleItems.map((item, viewIndex) => (
+          <Box key={`${viewIndex}-${item.name}`} width="100%">
+            <Box flexGrow={1}>
+              <Text color={theme.foreground}>{item.name}</Text>
+            </Box>
+            <Box width={10}>
+              <Text color={theme.muted}>{item.size ?? '-'}</Text>
+            </Box>
+            <Box width={12}>
+              <Text color={theme.muted}>{item.date ?? '-'}</Text>
+            </Box>
+            {scrollbar.hasScrollbar && (
+              <Text color={theme.muted}>
+                {getScrollbarChar(viewIndex, scrollbar.thumbPosition, scrollbar.thumbSize)}
+              </Text>
+            )}
+          </Box>
+        ))
+      )}
+    </Box>
+  );
+}
+
+/** Download progress sub-component */
+function ProgressSection({
+  progress,
+  theme,
+}: {
+  progress: DownloadInfo;
+  theme: ThemeTokens;
+}): React.JSX.Element {
+  const filename =
+    progress.filename.length > 45 ? progress.filename.slice(0, 42) + '...' : progress.filename;
+  const filledBars = Math.floor(progress.percentage / 5);
+
+  return (
+    <>
+      <Box width="100%">
+        <Text color={theme.border}>{'─'.repeat(200)}</Text>
+      </Box>
+      <Box flexDirection="column">
+        <Text color={theme.foreground}>
+          Downloading <Text color={theme.info}>{filename}</Text>
+        </Text>
+        <Box>
+          <Text color={theme.primary}>{'█'.repeat(filledBars)}</Text>
+          <Text color={theme.muted}>{'░'.repeat(20 - filledBars)}</Text>
+          <Text color={theme.foreground}>
+            {' '}| {progress.percentage}% | {progress.downloaded}/{progress.total} |{' '}
+            {progress.speed} | {progress.current}/{progress.total_files}
+          </Text>
+        </Box>
+      </Box>
+    </>
+  );
+}
+
+/**
+ * Tabbed panel with log/files views and progress indicator.
+ * Complexity is inherent to multi-view panel with conditional rendering
+ * for tabs, scrollbar, and download progress overlay.
+ */
+// eslint-disable-next-line complexity
 export function BrowsePanel({
   activeTab,
   onTabChange: _onTabChange,
@@ -115,65 +261,41 @@ export function BrowsePanel({
 }: BrowsePanelProps): React.JSX.Element {
   const { theme } = useTheme();
 
-  // Scroll state for each tab
   const [logScrollOffset, setLogScrollOffset] = useState(0);
   const [fileScrollOffset, setFileScrollOffset] = useState(0);
 
-  // Calculate content height (account for header row in files view)
   const contentHeight = downloadProgress !== null ? maxRows - 3 : maxRows;
-  const fileContentHeight = contentHeight - 1; // Account for header row
+  const fileContentHeight = contentHeight - 1;
 
-  // Get current items and scroll offset
   const items = activeTab === 'log' ? logItems : fileItems;
   const scrollOffset = activeTab === 'log' ? logScrollOffset : fileScrollOffset;
   const setScrollOffset = activeTab === 'log' ? setLogScrollOffset : setFileScrollOffset;
   const visibleHeight = activeTab === 'log' ? contentHeight : fileContentHeight;
 
-  // Reset scroll when items change or tab changes
   useEffect(() => {
     if (scrollOffset >= items.length) {
       setScrollOffset(Math.max(0, items.length - 1));
     }
   }, [items.length, scrollOffset, setScrollOffset]);
 
-  // Handle keyboard navigation
   useInput(
     (input, key) => {
-      // S key cycles sort field when in files tab
       if (input === 's' && activeTab === 'files' && onSortChange !== undefined) {
-        const fields: FileSortField[] = ['name', 'size', 'date'];
-        const currentIndex = fields.indexOf(sortField);
-        const nextIndex = (currentIndex + 1) % fields.length;
-        const nextField = fields[nextIndex];
-        if (nextField !== undefined) {
-          onSortChange(nextField);
-        }
+        onSortChange(cycleValue(sortField, SORT_FIELDS));
         return;
       }
 
-      // Scroll navigation
-      if (key.upArrow || input === 'k') {
-        setScrollOffset(Math.max(0, scrollOffset - 1));
-      } else if (key.downArrow || input === 'j') {
+      const direction = getNavDirection(input, key);
+      if (direction !== null) {
         const maxOffset = Math.max(0, items.length - visibleHeight);
-        setScrollOffset(Math.min(maxOffset, scrollOffset + 1));
-      } else if (key.pageUp) {
-        setScrollOffset(Math.max(0, scrollOffset - visibleHeight));
-      } else if (key.pageDown) {
-        const maxOffset = Math.max(0, items.length - visibleHeight);
-        setScrollOffset(Math.min(maxOffset, scrollOffset + visibleHeight));
+        const newOffset = calculateScrollNav(direction, scrollOffset, maxOffset, visibleHeight);
+        setScrollOffset(newOffset);
       }
     },
     { isActive: isFocused }
   );
 
-  const hasScrollbar = items.length > visibleHeight;
-
-  // Calculate scrollbar position
-  const scrollRatio = items.length > visibleHeight ? visibleHeight / items.length : 1;
-  const thumbSize = Math.max(1, Math.floor(scrollRatio * visibleHeight));
-  const maxScrollOffset = Math.max(1, items.length - visibleHeight);
-  const thumbPosition = Math.floor((scrollOffset / maxScrollOffset) * (visibleHeight - thumbSize));
+  const scrollbar = calculateScrollbar(items.length, visibleHeight, scrollOffset);
 
   return (
     <Box
@@ -184,169 +306,51 @@ export function BrowsePanel({
       width="100%"
       paddingX={1}
     >
-      {/* Title */}
       <Box marginTop={-1} marginLeft={-1}>
-        <Text color={theme.primary} bold>
-          Browse
-        </Text>
+        <Text color={theme.primary} bold>Browse</Text>
       </Box>
 
-      {/* Tab bar */}
       <Box justifyContent="center" marginBottom={0}>
         <Box marginRight={4}>
-          <Text
-            color={activeTab === 'files' ? theme.primary : theme.muted}
-            bold={activeTab === 'files'}
-          >
+          <Text color={activeTab === 'files' ? theme.primary : theme.muted} bold={activeTab === 'files'}>
             Files (w)
           </Text>
         </Box>
         <Text color={theme.border}>|</Text>
         <Box marginLeft={4}>
-          <Text
-            color={activeTab === 'log' ? theme.primary : theme.muted}
-            bold={activeTab === 'log'}
-          >
+          <Text color={activeTab === 'log' ? theme.primary : theme.muted} bold={activeTab === 'log'}>
             Log (q)
           </Text>
         </Box>
       </Box>
 
-      {/* Separator - uses flexGrow to fill width */}
       <Box width="100%">
         <Text color={theme.border}>{'─'.repeat(200)}</Text>
       </Box>
 
-      {/* Content area */}
       <Box flexDirection="column" height={contentHeight} width="100%">
         {activeTab === 'log' ? (
-          // Log view
-          logItems.length === 0 ? (
-            <Box marginY={1} width="100%">
-              <Text color={theme.muted}>No log entries yet</Text>
-            </Box>
-          ) : (
-            logItems.slice(logScrollOffset, logScrollOffset + contentHeight).map((item, viewIndex) => {
-              const icon = getStatusIcon(item.status);
-              const iconColor =
-                item.status === 'downloaded'
-                  ? theme.complete
-                  : item.status === 'skipped'
-                    ? theme.skipped
-                    : item.status === 'failed'
-                      ? theme.failed
-                      : theme.info;
-
-              return (
-                <Box key={item.id} width="100%">
-                  <Box flexGrow={1}>
-                    <Text color={iconColor}>{icon} </Text>
-                    <Text color={theme.foreground}>
-                      {item.message}
-                      {item.size !== undefined && item.size !== '' && (
-                        <Text color={theme.muted}> {item.size}</Text>
-                      )}
-                    </Text>
-                  </Box>
-                  {hasScrollbar && (
-                    <Text color={theme.muted}>
-                      {viewIndex >= thumbPosition && viewIndex < thumbPosition + thumbSize ? '█' : '░'}
-                    </Text>
-                  )}
-                </Box>
-              );
-            })
-          )
+          <LogView
+            items={logItems}
+            scrollOffset={logScrollOffset}
+            contentHeight={contentHeight}
+            scrollbar={scrollbar}
+            theme={theme}
+          />
         ) : (
-          // Files view
-          <Box flexDirection="column" width="100%">
-            {/* Sort headers */}
-            <Box marginBottom={0} width="100%">
-              <Box flexGrow={1}>
-                <Text
-                  color={sortField === 'name' ? theme.primary : theme.muted}
-                  bold={sortField === 'name'}
-                >
-                  Name {getSortIndicator('name', sortField, sortDirection)}
-                </Text>
-              </Box>
-              <Box width={10}>
-                <Text
-                  color={sortField === 'size' ? theme.primary : theme.muted}
-                  bold={sortField === 'size'}
-                >
-                  Size {getSortIndicator('size', sortField, sortDirection)}
-                </Text>
-              </Box>
-              <Box width={12}>
-                <Text
-                  color={sortField === 'date' ? theme.primary : theme.muted}
-                  bold={sortField === 'date'}
-                >
-                  Date {getSortIndicator('date', sortField, sortDirection)}
-                </Text>
-              </Box>
-              {hasScrollbar && <Text color={theme.muted}> </Text>}
-            </Box>
-            {fileItems.length === 0 ? (
-              <Box marginY={1} width="100%">
-                <Text color={theme.muted}>Select a directory to view files</Text>
-              </Box>
-            ) : (
-              fileItems.slice(fileScrollOffset, fileScrollOffset + fileContentHeight).map((item, viewIndex) => (
-                <Box key={`${viewIndex}-${item.name}`} width="100%">
-                  <Box flexGrow={1}>
-                    <Text color={theme.foreground}>{item.name}</Text>
-                  </Box>
-                  <Box width={10}>
-                    <Text color={theme.muted}>{item.size ?? '-'}</Text>
-                  </Box>
-                  <Box width={12}>
-                    <Text color={theme.muted}>{item.date ?? '-'}</Text>
-                  </Box>
-                  {hasScrollbar && (
-                    <Text color={theme.muted}>
-                      {viewIndex >= thumbPosition && viewIndex < thumbPosition + thumbSize ? '█' : '░'}
-                    </Text>
-                  )}
-                </Box>
-              ))
-            )}
-          </Box>
+          <FilesView
+            items={fileItems}
+            scrollOffset={fileScrollOffset}
+            contentHeight={fileContentHeight}
+            scrollbar={scrollbar}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            theme={theme}
+          />
         )}
       </Box>
 
-      {/* Progress section (when downloading) */}
-      {downloadProgress !== null && (
-        <>
-          <Box width="100%">
-            <Text color={theme.border}>{'─'.repeat(200)}</Text>
-          </Box>
-          <Box flexDirection="column">
-            <Text color={theme.foreground}>
-              Downloading{' '}
-              <Text color={theme.info}>
-                {downloadProgress.filename.length > 45
-                  ? downloadProgress.filename.slice(0, 42) + '...'
-                  : downloadProgress.filename}
-              </Text>
-            </Text>
-            <Box>
-              {/* Progress bar */}
-              <Text color={theme.primary}>
-                {'█'.repeat(Math.floor(downloadProgress.percentage / 5))}
-              </Text>
-              <Text color={theme.muted}>
-                {'░'.repeat(20 - Math.floor(downloadProgress.percentage / 5))}
-              </Text>
-              <Text color={theme.foreground}>
-                {' '}| {downloadProgress.percentage}% | {downloadProgress.downloaded}/{downloadProgress.total} |{' '}
-                {downloadProgress.speed} | {downloadProgress.current}/{downloadProgress.total_files}
-              </Text>
-            </Box>
-          </Box>
-        </>
-      )}
+      {downloadProgress !== null && <ProgressSection progress={downloadProgress} theme={theme} />}
     </Box>
   );
 }

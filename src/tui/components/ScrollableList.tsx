@@ -6,6 +6,13 @@
 import { Box, Text, useInput } from 'ink';
 import { useState, useEffect, type ReactNode } from 'react';
 import { useTheme } from '../theme/index.js';
+import {
+  getNavDirection,
+  isConfirmKey,
+  navigateList,
+  calculateScrollbar,
+  getScrollbarChar,
+} from '../hooks/index.js';
 
 type ScrollableListProps<T> = {
   /** Items to display */
@@ -52,8 +59,7 @@ export function ScrollableList<T>({
   // Reset scroll when items change
   useEffect(() => {
     if (selectedIndex >= items.length) {
-      const newIndex = Math.max(0, items.length - 1);
-      setSelectedIndex(newIndex);
+      setSelectedIndex(Math.max(0, items.length - 1));
     }
   }, [items.length, selectedIndex]);
 
@@ -62,37 +68,23 @@ export function ScrollableList<T>({
     (input, key) => {
       if (!isFocused || items.length === 0) {return;}
 
-      let newIndex = selectedIndex;
-
-      if (key.upArrow || input === 'k') {
-        newIndex = Math.max(0, selectedIndex - 1);
-      } else if (key.downArrow || input === 'j') {
-        newIndex = Math.min(items.length - 1, selectedIndex + 1);
-      } else if (key.pageUp) {
-        newIndex = Math.max(0, selectedIndex - maxRows);
-      } else if (key.pageDown) {
-        newIndex = Math.min(items.length - 1, selectedIndex + maxRows);
-      } else if (key.return && onSelect !== undefined) {
+      if (isConfirmKey(input, key) && onSelect !== undefined) {
         const item = items[selectedIndex];
-        if (item !== undefined) {
-          onSelect(selectedIndex, item);
-        }
+        if (item !== undefined) {onSelect(selectedIndex, item);}
         return;
       }
 
-      if (newIndex !== selectedIndex) {
-        setSelectedIndex(newIndex);
+      const direction = getNavDirection(input, key);
+      if (direction !== null) {
+        const result = navigateList(direction, selectedIndex, scrollOffset, 0, items.length - 1, maxRows);
+        if (result.index !== selectedIndex) {
+          setSelectedIndex(result.index);
+          setScrollOffset(result.scrollOffset);
 
-        // Adjust scroll offset to keep selection visible
-        if (newIndex < scrollOffset) {
-          setScrollOffset(newIndex);
-        } else if (newIndex >= scrollOffset + maxRows) {
-          setScrollOffset(newIndex - maxRows + 1);
-        }
-
-        const item = items[newIndex];
-        if (onSelectionChange !== undefined && item !== undefined) {
-          onSelectionChange(newIndex, item);
+          const item = items[result.index];
+          if (onSelectionChange !== undefined && item !== undefined) {
+            onSelectionChange(result.index, item);
+          }
         }
       }
     },
@@ -111,11 +103,7 @@ export function ScrollableList<T>({
   // Calculate visible items
   const visibleItems = items.slice(scrollOffset, scrollOffset + maxRows);
   const hasScrollbar = showScrollbar && items.length > maxRows;
-
-  // Scrollbar calculations
-  const scrollRatio = items.length > maxRows ? maxRows / items.length : 1;
-  const thumbSize = Math.max(1, Math.floor(scrollRatio * maxRows));
-  const thumbPosition = Math.floor((scrollOffset / Math.max(1, items.length - maxRows)) * (maxRows - thumbSize));
+  const { thumbSize, thumbPosition } = calculateScrollbar(items.length, maxRows, scrollOffset);
 
   return (
     <Box flexDirection="column">
@@ -128,11 +116,7 @@ export function ScrollableList<T>({
           <Box key={key} flexDirection="row">
             <Box flexGrow={1}>{renderItem(item, actualIndex, isSelected)}</Box>
             {hasScrollbar && (
-              <Text color={theme.muted}>
-                {viewIndex >= thumbPosition && viewIndex < thumbPosition + thumbSize
-                  ? '█'
-                  : '░'}
-              </Text>
+              <Text color={theme.muted}>{getScrollbarChar(viewIndex, thumbPosition, thumbSize)}</Text>
             )}
           </Box>
         );

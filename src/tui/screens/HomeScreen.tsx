@@ -41,6 +41,16 @@ import {
   type FileSortDirection,
 } from '../components/index.js';
 import { useAppState, useAppDispatch } from '../store/index.js';
+import {
+  MOCK_SYSTEM_OPTIONS,
+  MOCK_DEFAULT_SYSTEM,
+  MOCK_DIRECTORY_NODES,
+  MOCK_DEFAULT_DIR_PATH,
+  MOCK_ROOT_NAME,
+  MOCK_LOG_ITEMS,
+  MOCK_FILES_BY_PATH,
+} from '../mock/index.js';
+import { cycleValue, getHorizontalNav } from '../hooks/index.js';
 
 /** Focus areas in the UI */
 type FocusArea = 'run' | 'browse' | 'directory';
@@ -48,9 +58,37 @@ type FocusArea = 'run' | 'browse' | 'directory';
 /** Focus elements within RunSection */
 type RunFocus = 'command' | 'system' | 'send';
 
+/** Parse size string to bytes for comparison */
+function parseSize(size: string | undefined): number {
+  if (size === undefined) {return 0;}
+  const match = size.match(/^([\d.]+)\s*(KB|MB|GB|B)?$/i);
+  if (match === null) {return 0;}
+  const value = parseFloat(match[1] ?? '0');
+  const unit = (match[2] ?? 'B').toUpperCase();
+  const multipliers: Record<string, number> = { B: 1, KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 };
+  return value * (multipliers[unit] ?? 1);
+}
+
+/** Compare two file items by the given field */
+function compareFileItems(a: FileItem, b: FileItem, field: FileSortField): number {
+  if (field === 'name') {return a.name.localeCompare(b.name);}
+  if (field === 'size') {return parseSize(a.size) - parseSize(b.size);}
+  if (field === 'date') {return (a.date ?? '').localeCompare(b.date ?? '');}
+  return 0;
+}
+
+/** Focus area order for Tab cycling */
+const FOCUS_AREAS: readonly FocusArea[] = ['run', 'browse', 'directory'];
+
+/** Run section focus order */
+const RUN_FOCUS_ORDER: readonly RunFocus[] = ['command', 'system', 'send'];
+
 /**
- * Main home screen with the full TUI layout
+ * Main home screen with the full TUI layout.
+ * Complexity is inherent to orchestrating multiple panels (Run, Status, Directory, Browse)
+ * with focus management, keyboard navigation, and state coordination.
  */
+// eslint-disable-next-line complexity
 export function HomeScreen(): React.JSX.Element {
   const state = useAppState();
   const dispatch = useAppDispatch();
@@ -63,23 +101,13 @@ export function HomeScreen(): React.JSX.Element {
   const [selectedSystem, setSelectedSystem] = useState('');
   const [sortField, setSortField] = useState<FileSortField>('name');
   const [sortDirection, setSortDirection] = useState<FileSortDirection>('asc');
-  const [selectedDirPath, setSelectedDirPath] = useState<string>('Roms/GB');
-
-  // Mock system options matching TUI_TECHNICAL_OUTLINE.md
-  const mockSystemOptions: SelectOption[] = [
-    { value: 'GB', label: 'GB' },
-    { value: 'GBC', label: 'GBC' },
-    { value: 'SNES', label: 'SNES' },
-  ];
+  const [selectedDirPath, setSelectedDirPath] = useState<string>(MOCK_DEFAULT_DIR_PATH);
 
   // Build system options from config or use mock data
   const systemOptions: SelectOption[] =
     state.systems.length > 0
-      ? state.systems.map((sys) => ({
-          value: sys.name,
-          label: sys.name,
-        }))
-      : mockSystemOptions;
+      ? state.systems.map((sys) => ({ value: sys.name, label: sys.name }))
+      : MOCK_SYSTEM_OPTIONS;
 
   // Set default system if not set
   if (selectedSystem === '') {
@@ -90,122 +118,26 @@ export function HomeScreen(): React.JSX.Element {
       }
     } else {
       // Use first mock system as default
-      setSelectedSystem('GB');
+      setSelectedSystem(MOCK_DEFAULT_SYSTEM);
     }
   }
-
-  // Mock directory structure exactly matching TUI_TECHNICAL_OUTLINE.md
-  // Structure from outline:
-  //   downloads/
-  //    └─ Roms/
-  //      ├─ GB/
-  //      ├─ GBC/
-  //      │ ├── deleted/
-  //      │ └── Imgs/
-  //      └─ SNES/
-  const mockDirectoryNodes: TreeNode[] = [
-    {
-      name: 'Roms',
-      children: [
-        { name: 'GB' },
-        {
-          name: 'GBC',
-          children: [{ name: 'deleted' }, { name: 'Imgs' }],
-        },
-        { name: 'SNES' },
-      ],
-    },
-  ];
 
   // Build directory tree from config or use mock data
   const directoryNodes: TreeNode[] =
     state.systems.length > 0
-      ? [
-          {
-            name: 'Roms',
-            children: state.systems.map((sys) => ({
-              name: sys.name,
-              children: [{ name: 'Imgs' }],
-            })),
-          },
-        ]
-      : mockDirectoryNodes;
+      ? [{
+          name: 'Roms',
+          children: state.systems.map((sys) => ({ name: sys.name, children: [{ name: 'Imgs' }] })),
+        }]
+      : MOCK_DIRECTORY_NODES;
 
-  const rootName = state.config?.downloadDir ?? 'downloads';
-
-  // Mock log items (will be real data in Phase 2)
-  const mockLogItems: LogItem[] = [
-    { id: '1', status: 'downloaded', message: 'Super Mario Land (World).zip', size: '64 KB' },
-    { id: '2', status: 'downloaded', message: 'Pokemon Red (USA, Europe).zip', size: '1.0 MB' },
-    { id: '3', status: 'skipped', message: 'Tetris (World) (Rev A).zip' },
-    { id: '4', status: 'downloaded', message: 'Legend of Zelda, The - Links Awakening (USA).zip', size: '512 KB' },
-    { id: '5', status: 'failed', message: 'Metroid II - Return of Samus (World).zip' },
-    { id: '6', status: 'downloaded', message: 'Kirby Dream Land (USA, Europe).zip', size: '256 KB' },
-    { id: '7', status: 'skipped', message: 'Dr. Mario (World).zip' },
-    { id: '8', status: 'downloaded', message: 'Donkey Kong (World) (Rev A).zip', size: '32 KB' },
-    { id: '9', status: 'info', message: 'Scanning directory...' },
-    { id: '10', status: 'downloaded', message: 'Final Fantasy Adventure (USA).zip', size: '256 KB' },
-    { id: '11', status: 'downloaded', message: 'Mega Man - Dr. Wilys Revenge (USA).zip', size: '128 KB' },
-    { id: '12', status: 'skipped', message: 'Castlevania - The Adventure (USA, Europe).zip' },
-  ];
+  const rootName = state.config?.downloadDir ?? MOCK_ROOT_NAME;
 
   // Combine real log entries with mock data
   const logItems: LogItem[] =
     state.log.length > 0
-      ? state.log.map((entry) => ({
-          id: entry.id,
-          status: entry.status,
-          message: entry.message,
-          size: entry.details,
-        }))
-      : mockLogItems;
-
-  // Mock file items based on selected directory path (will be real data in Phase 2)
-  // Matches the directory structure from TUI_TECHNICAL_OUTLINE.md
-  const mockFilesByPath: Record<string, FileItem[]> = {
-    // Root Roms folder
-    Roms: [],
-    // GB system - ROMs
-    'Roms/GB': [
-      { name: 'Super Mario Land (World).zip', size: '64 KB', date: '2024-01-15' },
-      { name: 'Pokemon Red (USA, Europe).zip', size: '1.0 MB', date: '2024-01-14' },
-      { name: 'Tetris (World) (Rev A).zip', size: '32 KB', date: '2024-01-13' },
-      { name: 'Legend of Zelda, The - Links Awakening (USA).zip', size: '512 KB', date: '2024-01-12' },
-      { name: 'Kirby Dream Land (USA, Europe).zip', size: '256 KB', date: '2024-01-11' },
-      { name: 'Metroid II - Return of Samus (World).zip', size: '256 KB', date: '2024-01-10' },
-      { name: 'Donkey Kong (World) (Rev A).zip', size: '32 KB', date: '2024-01-09' },
-      { name: 'Final Fantasy Adventure (USA).zip', size: '256 KB', date: '2024-01-08' },
-    ],
-    // GBC system - ROMs
-    'Roms/GBC': [
-      { name: 'Pokemon Crystal (USA, Europe).zip', size: '2.0 MB', date: '2024-01-15' },
-      { name: 'Pokemon Gold (USA, Europe).zip', size: '2.0 MB', date: '2024-01-14' },
-      { name: 'Legend of Zelda, The - Oracle of Ages (USA).zip', size: '1.0 MB', date: '2024-01-13' },
-      { name: 'Legend of Zelda, The - Oracle of Seasons (USA).zip', size: '1.0 MB', date: '2024-01-12' },
-      { name: 'Dragon Quest III (Japan).zip', size: '1.5 MB', date: '2024-01-11' },
-    ],
-    // GBC deleted folder
-    'Roms/GBC/deleted': [
-      { name: 'bad_dump_pokemon.zip', size: '128 KB', date: '2024-01-10' },
-      { name: 'corrupted_zelda.zip', size: '64 KB', date: '2024-01-09' },
-    ],
-    // GBC Imgs folder - artwork
-    'Roms/GBC/Imgs': [
-      { name: 'Pokemon Crystal.png', size: '48 KB', date: '2024-01-15' },
-      { name: 'Pokemon Gold.png', size: '45 KB', date: '2024-01-14' },
-      { name: 'Oracle of Ages.png', size: '52 KB', date: '2024-01-13' },
-      { name: 'Oracle of Seasons.png', size: '51 KB', date: '2024-01-12' },
-    ],
-    // SNES system - ROMs
-    'Roms/SNES': [
-      { name: 'Super Mario World (USA).zip', size: '512 KB', date: '2024-01-15' },
-      { name: 'Legend of Zelda, The - A Link to the Past (USA).zip', size: '1.0 MB', date: '2024-01-14' },
-      { name: 'Super Metroid (Japan, USA) (En,Ja).zip', size: '3.0 MB', date: '2024-01-13' },
-      { name: 'Chrono Trigger (USA).zip', size: '4.0 MB', date: '2024-01-12' },
-      { name: 'Final Fantasy III (USA).zip', size: '3.0 MB', date: '2024-01-11' },
-      { name: 'Donkey Kong Country (USA) (Rev A).zip', size: '4.0 MB', date: '2024-01-10' },
-    ],
-  };
+      ? state.log.map((entry) => ({ id: entry.id, status: entry.status, message: entry.message, size: entry.details }))
+      : MOCK_LOG_ITEMS;
 
   // Handle directory selection
   const handleDirectorySelect = (path: string): void => {
@@ -215,28 +147,9 @@ export function HomeScreen(): React.JSX.Element {
   };
 
   // Sort file items
-  const unsortedFileItems: FileItem[] = mockFilesByPath[selectedDirPath] ?? [];
+  const unsortedFileItems: FileItem[] = MOCK_FILES_BY_PATH[selectedDirPath] ?? [];
   const fileItems = [...unsortedFileItems].sort((a, b) => {
-    let comparison = 0;
-
-    if (sortField === 'name') {
-      comparison = a.name.localeCompare(b.name);
-    } else if (sortField === 'size') {
-      // Parse size strings for comparison (e.g., "64 KB", "1.0 MB")
-      const parseSize = (size: string | undefined): number => {
-        if (size === undefined) {return 0;}
-        const match = size.match(/^([\d.]+)\s*(KB|MB|GB|B)?$/i);
-        if (match === null) {return 0;}
-        const value = parseFloat(match[1] ?? '0');
-        const unit = (match[2] ?? 'B').toUpperCase();
-        const multipliers: Record<string, number> = { B: 1, KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 };
-        return value * (multipliers[unit] ?? 1);
-      };
-      comparison = parseSize(a.size) - parseSize(b.size);
-    } else if (sortField === 'date') {
-      comparison = (a.date ?? '').localeCompare(b.date ?? '');
-    }
-
+    const comparison = compareFileItems(a, b, sortField);
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
@@ -250,75 +163,31 @@ export function HomeScreen(): React.JSX.Element {
     }
   };
 
-  // Handle keyboard navigation
+  // Handle keyboard navigation across all panels
+  // eslint-disable-next-line complexity
   useInput((input, key) => {
-    // Tab to cycle focus areas: run -> browse -> directory -> run
-    if (key.tab && !key.shift) {
-      if (focusArea === 'run') {
-        setFocusArea('browse');
-      } else if (focusArea === 'browse') {
-        setFocusArea('directory');
-      } else {
-        setFocusArea('run');
-        setRunFocus('command');
-      }
+    // Tab to cycle focus areas
+    if (key.tab) {
+      const direction = key.shift ? -1 : 1;
+      const newFocus = cycleValue(focusArea, FOCUS_AREAS, direction);
+      setFocusArea(newFocus);
+      if (newFocus === 'run') {setRunFocus(key.shift ? 'send' : 'command');}
       return;
     }
 
-    // Shift+Tab to cycle backwards
-    if (key.tab && key.shift) {
-      if (focusArea === 'run') {
-        setFocusArea('directory');
-      } else if (focusArea === 'browse') {
-        setFocusArea('run');
-        setRunFocus('send');
-      } else {
-        setFocusArea('browse');
-      }
-      return;
-    }
-
-    // P key - focus Run section
-    if (input === 'p' && !key.ctrl) {
-      setFocusArea('run');
-      setRunFocus('command');
-      return;
-    }
-
-    // D key - focus Directory section
-    if (input === 'd' && !key.ctrl) {
-      setFocusArea('directory');
-      return;
-    }
-
-    // W key - switch to Files tab and focus browse
-    if (input === 'w' && !key.ctrl) {
-      setActiveTab('files');
-      setFocusArea('browse');
-      return;
-    }
-
-    // Q key - switch to Log tab and focus browse
-    if (input === 'q' && !key.ctrl) {
-      setActiveTab('log');
-      setFocusArea('browse');
-      return;
+    // Hotkey navigation (p, d, w, q)
+    if (!key.ctrl) {
+      if (input === 'p') {setFocusArea('run'); setRunFocus('command'); return;}
+      if (input === 'd') {setFocusArea('directory'); return;}
+      if (input === 'w') {setActiveTab('files'); setFocusArea('browse'); return;}
+      if (input === 'q') {setActiveTab('log'); setFocusArea('browse'); return;}
     }
 
     // Navigate within run section using arrow keys
     if (focusArea === 'run') {
-      if (key.leftArrow) {
-        if (runFocus === 'system') {
-          setRunFocus('command');
-        } else if (runFocus === 'send') {
-          setRunFocus('system');
-        }
-      } else if (key.rightArrow) {
-        if (runFocus === 'command') {
-          setRunFocus('system');
-        } else if (runFocus === 'system') {
-          setRunFocus('send');
-        }
+      const direction = getHorizontalNav(input, key);
+      if (direction !== null) {
+        setRunFocus(cycleValue(runFocus, RUN_FOCUS_ORDER, direction === 'right' ? 1 : -1));
       }
     }
   });

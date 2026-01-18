@@ -27,6 +27,27 @@ type SelectProps = {
   label?: string;
 };
 
+/** Navigate to adjacent option and call onChange if valid */
+function navigateOption(
+  direction: 'up' | 'down',
+  currentIndex: number,
+  options: SelectOption[],
+  onChange: (value: string) => void
+): void {
+  const newIndex = direction === 'up'
+    ? Math.max(0, currentIndex - 1)
+    : Math.min(options.length - 1, currentIndex + 1);
+  const newOption = options[newIndex];
+  if (newOption !== undefined) {onChange(newOption.value);}
+}
+
+/** Check if input is navigation key */
+function isNavKey(input: string, key: { upArrow: boolean; downArrow: boolean }): 'up' | 'down' | null {
+  if (key.upArrow || input === 'k') {return 'up';}
+  if (key.downArrow || input === 'j') {return 'down';}
+  return null;
+}
+
 /**
  * Dropdown select component
  * When focused, use up/down arrows to change selection
@@ -55,37 +76,14 @@ export function Select({
         return;
       }
 
-      if (isOpen) {
-        if (key.upArrow || input === 'k') {
-          const newIndex = Math.max(0, currentIndex - 1);
-          const newOption = options[newIndex];
-          if (newOption !== undefined) {
-            onChange(newOption.value);
-          }
-        } else if (key.downArrow || input === 'j') {
-          const newIndex = Math.min(options.length - 1, currentIndex + 1);
-          const newOption = options[newIndex];
-          if (newOption !== undefined) {
-            onChange(newOption.value);
-          }
-        } else if (key.escape) {
-          setIsOpen(false);
-        }
-      } else {
-        // When closed, arrows also cycle through options
-        if (key.upArrow || input === 'k') {
-          const newIndex = Math.max(0, currentIndex - 1);
-          const newOption = options[newIndex];
-          if (newOption !== undefined) {
-            onChange(newOption.value);
-          }
-        } else if (key.downArrow || input === 'j') {
-          const newIndex = Math.min(options.length - 1, currentIndex + 1);
-          const newOption = options[newIndex];
-          if (newOption !== undefined) {
-            onChange(newOption.value);
-          }
-        }
+      if (isOpen && key.escape) {
+        setIsOpen(false);
+        return;
+      }
+
+      const direction = isNavKey(input, key);
+      if (direction !== null) {
+        navigateOption(direction, currentIndex, options, onChange);
       }
     },
     { isActive: isFocused }
