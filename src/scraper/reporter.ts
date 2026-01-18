@@ -45,7 +45,6 @@ export function renderScrapeSummary(summary: ScrapeSummary): string {
     ''
   );
 
-
   return lines.join('\n');
 }
 

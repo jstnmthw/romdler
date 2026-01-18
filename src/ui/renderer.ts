@@ -93,10 +93,13 @@ export class Renderer {
     if (this.logLevel === 'silent') {
       return;
     }
-    const filterText = limit !== undefined && limit < filtered
-      ? `${chalk.yellow(limit)}/${filtered}`
-      : `${chalk.white(filtered)}`;
-    console.log(`  ${chalk.gray('Found:')} ${chalk.white(totalFound)} files, ${chalk.gray('downloading:')} ${filterText}`);
+    const filterText =
+      limit !== undefined && limit < filtered
+        ? `${chalk.yellow(limit)}/${filtered}`
+        : `${chalk.white(filtered)}`;
+    console.log(
+      `  ${chalk.gray('Found:')} ${chalk.white(totalFound)} files, ${chalk.gray('downloading:')} ${filterText}`
+    );
     console.log('');
   }
 

@@ -143,9 +143,7 @@ export class LibretroManifest {
 
     // If rate limited, try CDN fallback
     if (githubResult.rateLimited) {
-      console.error(
-        `GitHub API rate limit exceeded for ${systemName}, trying CDN fallback...`
-      );
+      console.error(`GitHub API rate limit exceeded for ${systemName}, trying CDN fallback...`);
       return await this.fetchFromCdn(systemName);
     }
 
@@ -479,9 +477,7 @@ export class LibretroManifest {
 
     // If rate limited, try CDN fallback
     if (githubResult.rateLimited) {
-      console.error(
-        `GitHub API rate limit exceeded for ${systemName}, trying CDN fallback...`
-      );
+      console.error(`GitHub API rate limit exceeded for ${systemName}, trying CDN fallback...`);
       const cdnManifest = await this.fetchFromCdn(systemName);
       if (cdnManifest !== null) {
         return cdnManifest;

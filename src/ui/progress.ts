@@ -175,9 +175,10 @@ export function renderProgressBarString(options: ProgressBarStringOptions): stri
     totalBytes !== null && totalBytes > 0 ? Math.round((bytesDownloaded / totalBytes) * 100) : 0;
 
   // Build progress bar
-  const filledWidth = totalBytes !== null && totalBytes > 0
-    ? Math.round((bytesDownloaded / totalBytes) * barWidth)
-    : 0;
+  const filledWidth =
+    totalBytes !== null && totalBytes > 0
+      ? Math.round((bytesDownloaded / totalBytes) * barWidth)
+      : 0;
   const emptyWidth = barWidth - filledWidth;
   const bar = '\u2588'.repeat(filledWidth) + '\u2591'.repeat(emptyWidth);
 

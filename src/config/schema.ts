@@ -226,10 +226,7 @@ function lookupSystemInfo(
  * @param config - The full config (for downloadDir and customSystems)
  * @returns Resolved system config with all defaults applied
  */
-export function resolveSystemConfig(
-  system: SystemConfig,
-  config: Config
-): ResolvedSystemConfig {
+export function resolveSystemConfig(system: SystemConfig, config: Config): ResolvedSystemConfig {
   const systemInfo = lookupSystemInfo(system.system, config.customSystems);
 
   // Use folder if provided, otherwise default to system shortcode

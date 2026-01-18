@@ -151,7 +151,9 @@ function printSummary(summary: PurgeSummary): void {
   console.log(`  ${chalk.gray('Scanned:')}         ${chalk.white(summary.totalScanned)}`);
   console.log(`  ${chalk.gray('Matched:')}         ${chalk.red(summary.matchedBlacklist)}`);
   console.log(`  ${chalk.gray('Deleted:')}         ${chalk.red(summary.deleted)}`);
-  console.log(`  ${chalk.gray('Failed:')}          ${summary.failed > 0 ? chalk.red(summary.failed) : chalk.white(summary.failed)}`);
+  console.log(
+    `  ${chalk.gray('Failed:')}          ${summary.failed > 0 ? chalk.red(summary.failed) : chalk.white(summary.failed)}`
+  );
   console.log('');
 }
 
