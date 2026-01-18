@@ -11,6 +11,7 @@ downloads/
 
 # Logs
 *.log
+logs/
 npm-debug.log*
 pnpm-debug.log*
 
@@ -21,6 +22,7 @@ pnpm-debug.log*
 
 # IDE
 .vscode/
+.claude/
 .idea/
 *.swp
 *.swo

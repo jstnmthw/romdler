@@ -245,12 +245,15 @@ Common shortcodes:
 
 | Category | Shortcodes |
 |----------|------------|
-| **Nintendo** | `gb`, `gbc`, `gba`, `nds`, `vb`, `gw`, `poke`, `nes`/`fc`, `fds`, `snes`/`sfc`, `n64` |
-| **Sega** | `sms`, `gg`, `md`/`genesis`, `mdcd`/`scd`, `32x`, `saturn`, `dreamcast`/`dc`, `pico`, `naomi` |
+| **Nintendo** | `gb`, `gbc`, `gba`, `nds`, `vb`, `gw`, `poke`/`pokemini`, `nes`/`fc`, `fds`, `snes`/`sfc`, `n64` |
+| **Sega** | `sms`, `gg`, `md`/`genesis`, `mdcd`/`scd`/`segacd`, `32x`, `saturn`, `dreamcast`/`dc`, `pico`, `naomi` |
 | **Sony** | `ps`/`psx`/`ps1`, `psp` |
-| **Atari** | `atari`/`2600`, `a5200`, `a7800`, `a800`, `lynx` |
+| **Atari** | `atari`/`2600`, `a5200`/`5200`, `a7800`/`7800`, `a800`, `lynx` |
 | **Arcade** | `mame`/`arcade`, `fbneo`, `hbmame`, `cps1`, `cps2`, `cps3`, `neogeo`, `atomiswave` |
-| **Other** | `pce`/`tg16`, `pcecd`, `ngp`/`ngpc`, `ws`/`wsc`, `coleco`, `msx`, `dos` |
+| **NEC** | `pce`/`tg16`, `pcecd` |
+| **SNK** | `neogeo`, `ngp`/`ngpc` |
+| **Bandai** | `ws`/`wsc` |
+| **Other** | `coleco`, `intv`, `c64`, `msx`, `dos`, `easyrpg`, `openbor` |
 
 For the full list with all aliases, see [`src/systems/definitions.ts`](../systems/definitions.ts).
 
@@ -258,40 +261,53 @@ For custom systems not in the registry, see `customSystems` in the main [README.
 
 ## Media Types
 
-| Type | Description |
-|------|-------------|
-| `box-2D` | 2D box art (front cover) - **default** |
-| `box-3D` | 3D box art render |
-| `ss` | In-game screenshot |
-| `sstitle` | Title screen |
-| `wheel` | Logo/wheel art |
-| `mixrbv1` | Mix image v1 (composite) |
-| `mixrbv2` | Mix image v2 (composite) |
-| `marquee` | Arcade marquee |
-| `fanart` | Fan artwork |
+Media type availability depends on the source adapter:
+
+| Type | Description | Libretro | ScreenScraper |
+|------|-------------|----------|---------------|
+| `box-2D` | 2D box art (front cover) - **default** | Yes | Yes |
+| `box-3D` | 3D box art render | No | Yes |
+| `ss` | In-game screenshot | Yes | Yes |
+| `sstitle` | Title screen | Yes | Yes |
+| `wheel` | Logo/wheel art | No | Yes |
+| `mixrbv1` | Mix image v1 (composite) | No | Yes |
+| `mixrbv2` | Mix image v2 (composite) | No | Yes |
+| `marquee` | Arcade marquee | No | Yes |
+| `fanart` | Fan artwork | No | Yes |
+| `video` | Video preview | No | Yes |
+
+**Note:** Libretro also accepts aliases: `boxart` (for `box-2D`), `snap`/`screenshot` (for `ss`), `title` (for `sstitle`).
 
 ## CLI Options
 
 ```bash
 # Preview what would be downloaded
-pnpm start -- scrape --dry-run
+pnpm start -- scrape --dry-run      # or -n
 
 # Force re-download (overwrite existing)
-pnpm start -- scrape --force
+pnpm start -- scrape --force        # or -f
 
 # Limit to first N files
-pnpm start -- scrape --limit 10
+pnpm start -- scrape --limit 10     # or -l 10
 
 # Override media type
-pnpm start -- scrape --media ss
+pnpm start -- scrape --media ss     # or -m ss
 
 # Override region priority
-pnpm start -- scrape --region us,eu,jp
+pnpm start -- scrape --region us,eu,jp  # or -r us,eu,jp
 
-# Use specific source only
-pnpm start -- scrape --source libretro
-pnpm start -- scrape --source screenscraper
+# Use custom config file
+pnpm start -- scrape --config ./my-config.json  # or -c ./my-config.json
 ```
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--dry-run` | `-n` | Preview mode - show what would happen without downloading |
+| `--force` | `-f` | Overwrite existing images |
+| `--limit <N>` | `-l` | Limit to first N files |
+| `--media <type>` | `-m` | Override media type (box-2D, ss, sstitle, etc.) |
+| `--region <list>` | `-r` | Override region priority (comma-separated) |
+| `--config <path>` | `-c` | Use custom config file path |
 
 ## Output
 
@@ -404,18 +420,23 @@ src/scraper/
 ├── libretro/           # Libretro Thumbnails adapter
 │   ├── adapter.ts      # Implementation
 │   ├── manifest.ts     # Manifest fetching and matching
+│   ├── cdn-parser.ts   # CDN directory listing parser
 │   ├── systems.ts      # System ID to folder name mapping
-│   └── sanitizer.ts    # Filename sanitization
+│   ├── sanitizer.ts    # Filename sanitization
+│   └── index.ts
 ├── screenscraper/      # ScreenScraper adapter
 │   ├── adapter.ts      # Implementation
 │   ├── client.ts       # API client
 │   ├── systems.ts      # System definitions
-│   └── types.ts        # API types
+│   ├── types.ts        # API types
+│   └── index.ts
 ├── scraper.ts          # Main orchestrator
 ├── scanner.ts          # Directory scanning
 ├── hasher.ts           # CRC32 calculation
 ├── downloader.ts       # Image downloading
-└── reporter.ts         # Console output
+├── reporter.ts         # Console output
+├── types.ts            # Shared scraper types
+└── index.ts            # Module exports
 ```
 
 ## Adding New Adapters
