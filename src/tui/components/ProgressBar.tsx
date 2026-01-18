@@ -41,9 +41,7 @@ export function ProgressBar({
     <Box>
       <Text color={theme.primary}>{filledChar.repeat(filledWidth)}</Text>
       <Text color={theme.muted}>{emptyChar.repeat(emptyWidth)}</Text>
-      {showPercentage && (
-        <Text color={theme.foreground}>| {Math.round(clampedValue)}%</Text>
-      )}
+      {showPercentage && <Text color={theme.foreground}>| {Math.round(clampedValue)}%</Text>}
     </Box>
   );
 }

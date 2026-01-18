@@ -37,9 +37,7 @@ export function DedupeScreen(): React.JSX.Element {
           Deduplication
         </Text>
         <Box marginTop={1}>
-          <Text color={theme.muted}>
-            Dedupe functionality will be implemented in Phase 2.
-          </Text>
+          <Text color={theme.muted}>Dedupe functionality will be implemented in Phase 2.</Text>
         </Box>
         <Box marginTop={1}>
           <Text color={theme.info}>

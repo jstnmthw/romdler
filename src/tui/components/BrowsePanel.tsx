@@ -83,7 +83,9 @@ function getSortIndicator(
   currentField: FileSortField,
   direction: FileSortDirection
 ): string {
-  if (field !== currentField) {return ' ';}
+  if (field !== currentField) {
+    return ' ';
+  }
   return direction === 'asc' ? '▲' : '▼';
 }
 
@@ -163,17 +165,26 @@ function FilesView({
       {/* Sort headers */}
       <Box marginBottom={0} width="100%">
         <Box flexGrow={1}>
-          <Text color={sortField === 'name' ? theme.primary : theme.muted} bold={sortField === 'name'}>
+          <Text
+            color={sortField === 'name' ? theme.primary : theme.muted}
+            bold={sortField === 'name'}
+          >
             Name {getSortIndicator('name', sortField, sortDirection)}
           </Text>
         </Box>
         <Box width={10}>
-          <Text color={sortField === 'size' ? theme.primary : theme.muted} bold={sortField === 'size'}>
+          <Text
+            color={sortField === 'size' ? theme.primary : theme.muted}
+            bold={sortField === 'size'}
+          >
             Size {getSortIndicator('size', sortField, sortDirection)}
           </Text>
         </Box>
         <Box width={12}>
-          <Text color={sortField === 'date' ? theme.primary : theme.muted} bold={sortField === 'date'}>
+          <Text
+            color={sortField === 'date' ? theme.primary : theme.muted}
+            bold={sortField === 'date'}
+          >
             Date {getSortIndicator('date', sortField, sortDirection)}
           </Text>
         </Box>
@@ -232,8 +243,9 @@ function ProgressSection({
           <Text color={theme.primary}>{'█'.repeat(filledBars)}</Text>
           <Text color={theme.muted}>{'░'.repeat(20 - filledBars)}</Text>
           <Text color={theme.foreground}>
-            {' '}| {progress.percentage}% | {progress.downloaded}/{progress.total} |{' '}
-            {progress.speed} | {progress.current}/{progress.total_files}
+            {' '}
+            | {progress.percentage}% | {progress.downloaded}/{progress.total} | {progress.speed} |{' '}
+            {progress.current}/{progress.total_files}
           </Text>
         </Box>
       </Box>
@@ -307,18 +319,26 @@ export function BrowsePanel({
       paddingX={1}
     >
       <Box marginTop={-1} marginLeft={-1}>
-        <Text color={theme.primary} bold>Browse</Text>
+        <Text color={theme.primary} bold>
+          Browse
+        </Text>
       </Box>
 
       <Box justifyContent="center" marginBottom={0}>
         <Box marginRight={4}>
-          <Text color={activeTab === 'files' ? theme.primary : theme.muted} bold={activeTab === 'files'}>
+          <Text
+            color={activeTab === 'files' ? theme.primary : theme.muted}
+            bold={activeTab === 'files'}
+          >
             Files (w)
           </Text>
         </Box>
         <Text color={theme.border}>|</Text>
         <Box marginLeft={4}>
-          <Text color={activeTab === 'log' ? theme.primary : theme.muted} bold={activeTab === 'log'}>
+          <Text
+            color={activeTab === 'log' ? theme.primary : theme.muted}
+            bold={activeTab === 'log'}
+          >
             Log (q)
           </Text>
         </Box>

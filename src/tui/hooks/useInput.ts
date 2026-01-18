@@ -41,9 +41,16 @@ export type NavResult = {
  * Check if input is a vertical navigation key (up/down/j/k)
  * @returns 'up' | 'down' | null
  */
-export function getVerticalNav(input: string, key: Pick<KeyInfo, 'upArrow' | 'downArrow'>): 'up' | 'down' | null {
-  if (key.upArrow || input === 'k') {return 'up';}
-  if (key.downArrow || input === 'j') {return 'down';}
+export function getVerticalNav(
+  input: string,
+  key: Pick<KeyInfo, 'upArrow' | 'downArrow'>
+): 'up' | 'down' | null {
+  if (key.upArrow || input === 'k') {
+    return 'up';
+  }
+  if (key.downArrow || input === 'j') {
+    return 'down';
+  }
   return null;
 }
 
@@ -51,9 +58,16 @@ export function getVerticalNav(input: string, key: Pick<KeyInfo, 'upArrow' | 'do
  * Check if input is a horizontal navigation key (left/right/h/l)
  * @returns 'left' | 'right' | null
  */
-export function getHorizontalNav(input: string, key: Pick<KeyInfo, 'leftArrow' | 'rightArrow'>): 'left' | 'right' | null {
-  if (key.leftArrow || input === 'h') {return 'left';}
-  if (key.rightArrow || input === 'l') {return 'right';}
+export function getHorizontalNav(
+  input: string,
+  key: Pick<KeyInfo, 'leftArrow' | 'rightArrow'>
+): 'left' | 'right' | null {
+  if (key.leftArrow || input === 'h') {
+    return 'left';
+  }
+  if (key.rightArrow || input === 'l') {
+    return 'right';
+  }
   return null;
 }
 
@@ -61,9 +75,15 @@ export function getHorizontalNav(input: string, key: Pick<KeyInfo, 'leftArrow' |
  * Check if input is a page navigation key
  * @returns 'pageUp' | 'pageDown' | null
  */
-export function getPageNav(key: Pick<KeyInfo, 'pageUp' | 'pageDown'>): 'pageUp' | 'pageDown' | null {
-  if (key.pageUp) {return 'pageUp';}
-  if (key.pageDown) {return 'pageDown';}
+export function getPageNav(
+  key: Pick<KeyInfo, 'pageUp' | 'pageDown'>
+): 'pageUp' | 'pageDown' | null {
+  if (key.pageUp) {
+    return 'pageUp';
+  }
+  if (key.pageDown) {
+    return 'pageDown';
+  }
   return null;
 }
 
@@ -75,7 +95,9 @@ export function getNavDirection(
   key: Pick<KeyInfo, 'upArrow' | 'downArrow' | 'pageUp' | 'pageDown'>
 ): NavDirection | null {
   const vertical = getVerticalNav(input, key);
-  if (vertical !== null) {return vertical;}
+  if (vertical !== null) {
+    return vertical;
+  }
   return getPageNav(key);
 }
 
@@ -253,7 +275,11 @@ export function calculateScrollbar(
  * @param thumbSize - Size of thumb in rows
  * @returns Scrollbar character
  */
-export function getScrollbarChar(rowIndex: number, thumbPosition: number, thumbSize: number): string {
+export function getScrollbarChar(
+  rowIndex: number,
+  thumbPosition: number,
+  thumbSize: number
+): string {
   return rowIndex >= thumbPosition && rowIndex < thumbPosition + thumbSize ? '█' : '░';
 }
 
@@ -270,7 +296,9 @@ export function getScrollbarChar(rowIndex: number, thumbPosition: number, thumbS
  */
 export function cycleValue<T>(current: T, values: readonly T[], direction: 1 | -1 = 1): T {
   const currentIndex = values.indexOf(current);
-  if (currentIndex === -1) {return values[0] as T;}
+  if (currentIndex === -1) {
+    return values[0] as T;
+  }
   const nextIndex = (currentIndex + direction + values.length) % values.length;
   return values[nextIndex] as T;
 }

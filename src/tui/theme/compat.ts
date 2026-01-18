@@ -49,15 +49,7 @@ export function hexToAnsi256(hex: string): number {
 }
 
 /** Basic 16-color ANSI names */
-type BasicColor =
-  | 'black'
-  | 'red'
-  | 'green'
-  | 'yellow'
-  | 'blue'
-  | 'magenta'
-  | 'cyan'
-  | 'white';
+type BasicColor = 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white';
 
 /** Parse hex string to RGB tuple */
 function parseHexToRgb(hex: string): [number, number, number] {

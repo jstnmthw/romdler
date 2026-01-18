@@ -114,31 +114,46 @@ export function StatusBox({
       <Box flexDirection="column">
         <Text>
           <Text color={theme.foreground}>
-            {formatStatLine('Found', stats.found, statWidth).slice(0, -stats.found.toLocaleString().length)}
+            {formatStatLine('Found', stats.found, statWidth).slice(
+              0,
+              -stats.found.toLocaleString().length
+            )}
           </Text>
           <Text color={theme.info}>{stats.found.toLocaleString()}</Text>
         </Text>
         <Text>
           <Text color={theme.foreground}>
-            {formatStatLine('Filtered', stats.filtered, statWidth).slice(0, -stats.filtered.toLocaleString().length)}
+            {formatStatLine('Filtered', stats.filtered, statWidth).slice(
+              0,
+              -stats.filtered.toLocaleString().length
+            )}
           </Text>
           <Text color={theme.info}>{stats.filtered.toLocaleString()}</Text>
         </Text>
         <Text>
           <Text color={theme.foreground}>
-            {formatStatLine('Downloaded', stats.downloaded, statWidth).slice(0, -stats.downloaded.toLocaleString().length)}
+            {formatStatLine('Downloaded', stats.downloaded, statWidth).slice(
+              0,
+              -stats.downloaded.toLocaleString().length
+            )}
           </Text>
           <Text color={theme.complete}>{stats.downloaded.toLocaleString()}</Text>
         </Text>
         <Text>
           <Text color={theme.foreground}>
-            {formatStatLine('Skipped', stats.skipped, statWidth).slice(0, -stats.skipped.toLocaleString().length)}
+            {formatStatLine('Skipped', stats.skipped, statWidth).slice(
+              0,
+              -stats.skipped.toLocaleString().length
+            )}
           </Text>
           <Text color={theme.skipped}>{stats.skipped.toLocaleString()}</Text>
         </Text>
         <Text>
           <Text color={theme.foreground}>
-            {formatStatLine('Failed', stats.failed, statWidth).slice(0, -stats.failed.toLocaleString().length)}
+            {formatStatLine('Failed', stats.failed, statWidth).slice(
+              0,
+              -stats.failed.toLocaleString().length
+            )}
           </Text>
           <Text color={theme.failed}>{stats.failed.toLocaleString()}</Text>
         </Text>

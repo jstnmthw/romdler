@@ -3,19 +3,8 @@
  * Manages global state for the TUI using React Context + useReducer
  */
 
-import {
-  createContext,
-  useContext,
-  useReducer,
-  type ReactNode,
-  type Dispatch,
-} from 'react';
-import {
-  type AppState,
-  type AppAction,
-  type TaskStats,
-  createInitialState,
-} from './types.js';
+import { createContext, useContext, useReducer, type ReactNode, type Dispatch } from 'react';
+import { type AppState, type AppAction, type TaskStats, createInitialState } from './types.js';
 
 /** Initial stats object */
 const INITIAL_STATS: TaskStats = {
@@ -27,12 +16,18 @@ const INITIAL_STATS: TaskStats = {
 };
 
 /** Handle navigation action */
-function handleNavigate(state: AppState, action: Extract<AppAction, { type: 'NAVIGATE' }>): AppState {
+function handleNavigate(
+  state: AppState,
+  action: Extract<AppAction, { type: 'NAVIGATE' }>
+): AppState {
   return { ...state, screen: action.screen };
 }
 
 /** Handle config set action */
-function handleSetConfig(state: AppState, action: Extract<AppAction, { type: 'SET_CONFIG' }>): AppState {
+function handleSetConfig(
+  state: AppState,
+  action: Extract<AppAction, { type: 'SET_CONFIG' }>
+): AppState {
   return {
     ...state,
     config: action.config,
@@ -144,20 +139,13 @@ type AppProviderProps = {
  * Provider component for application state
  * Wraps the app and provides state + dispatch to all children
  */
-export function AppProvider({
-  children,
-  initialState,
-}: AppProviderProps): React.JSX.Element {
+export function AppProvider({ children, initialState }: AppProviderProps): React.JSX.Element {
   const [state, dispatch] = useReducer(appReducer, {
     ...createInitialState(),
     ...initialState,
   });
 
-  return (
-    <AppContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
 
 /**

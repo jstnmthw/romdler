@@ -55,7 +55,14 @@ function flattenTree(
     const path = parentPath !== '' ? `${parentPath}/${node.name}` : node.name;
     const hasChildren = node.children !== undefined && node.children.length > 0;
 
-    result.push({ name: node.name, depth, isLast, parentLasts: [...parentLasts], path, hasChildren });
+    result.push({
+      name: node.name,
+      depth,
+      isLast,
+      parentLasts: [...parentLasts],
+      path,
+      hasChildren,
+    });
 
     if (hasChildren) {
       result.push(...flattenTree(node.children!, depth + 1, [...parentLasts, isLast], path));
@@ -79,12 +86,19 @@ function getTreePrefix(node: FlatNode): string {
 
 /** Create a root FlatNode */
 function createRootNode(rootName: string): FlatNode {
-  return { name: rootName, depth: -1, isLast: false, parentLasts: [], path: rootName, hasChildren: true };
+  return {
+    name: rootName,
+    depth: -1,
+    isLast: false,
+    parentLasts: [],
+    path: rootName,
+    hasChildren: true,
+  };
 }
 
 /** Get node at given index or create root node */
 function getNodeAt(index: number, flatNodes: FlatNode[], rootName: string): FlatNode {
-  return index === -1 ? createRootNode(rootName) : flatNodes[index] ?? createRootNode(rootName);
+  return index === -1 ? createRootNode(rootName) : (flatNodes[index] ?? createRootNode(rootName));
 }
 
 /**
@@ -111,13 +125,17 @@ export function DirectoryTree({
   useEffect(() => {
     if (selectedPath !== undefined) {
       const idx = flatNodes.findIndex((n) => n.path === selectedPath);
-      if (idx !== -1) {setSelectedIndex(idx);}
+      if (idx !== -1) {
+        setSelectedIndex(idx);
+      }
     }
   }, [selectedPath, flatNodes]);
 
   useInput(
     (input, key) => {
-      if (flatNodes.length === 0) {return;}
+      if (flatNodes.length === 0) {
+        return;
+      }
 
       if (isConfirmKey(input, key) && onSelect !== undefined) {
         const node = getNodeAt(selectedIndex, flatNodes, rootName);
@@ -143,7 +161,11 @@ export function DirectoryTree({
   );
 
   const totalItems = flatNodes.length + 1;
-  const { hasScrollbar, thumbSize, thumbPosition } = calculateScrollbar(totalItems, maxRows, scrollOffset);
+  const { hasScrollbar, thumbSize, thumbPosition } = calculateScrollbar(
+    totalItems,
+    maxRows,
+    scrollOffset
+  );
   const visibleStart = scrollOffset;
   const visibleEnd = scrollOffset + maxRows;
 
@@ -156,7 +178,9 @@ export function DirectoryTree({
       paddingX={1}
     >
       <Box marginTop={-1} marginLeft={-1}>
-        <Text color={theme.primary} bold>Directory</Text>
+        <Text color={theme.primary} bold>
+          Directory
+        </Text>
       </Box>
 
       {nodes.length === 0 ? (
@@ -176,13 +200,17 @@ export function DirectoryTree({
                   {rootName}/
                 </Text>
               </Box>
-              {hasScrollbar && <Text color={theme.muted}>{getScrollbarChar(0, thumbPosition, thumbSize)}</Text>}
+              {hasScrollbar && (
+                <Text color={theme.muted}>{getScrollbarChar(0, thumbPosition, thumbSize)}</Text>
+              )}
             </Box>
           )}
 
           {flatNodes.map((node, index) => {
             const itemPos = index + 1;
-            if (itemPos < visibleStart || itemPos >= visibleEnd) {return null;}
+            if (itemPos < visibleStart || itemPos >= visibleEnd) {
+              return null;
+            }
 
             const isSelected = index === selectedIndex;
             const viewIndex = itemPos - visibleStart;
@@ -199,7 +227,11 @@ export function DirectoryTree({
                     {node.name}/
                   </Text>
                 </Box>
-                {hasScrollbar && <Text color={theme.muted}>{getScrollbarChar(viewIndex, thumbPosition, thumbSize)}</Text>}
+                {hasScrollbar && (
+                  <Text color={theme.muted}>
+                    {getScrollbarChar(viewIndex, thumbPosition, thumbSize)}
+                  </Text>
+                )}
               </Box>
             );
           })}

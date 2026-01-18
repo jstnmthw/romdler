@@ -66,9 +66,7 @@ export function SettingsScreen(): React.JSX.Element {
         )}
 
         <Box marginTop={2}>
-          <Text color={theme.muted}>
-            Full settings editing will be implemented in Phase 3.
-          </Text>
+          <Text color={theme.muted}>Full settings editing will be implemented in Phase 3.</Text>
         </Box>
         <Box marginTop={1}>
           <Text color={theme.info}>

@@ -30,7 +30,9 @@ export function Button({
 
   useInput(
     (input, key) => {
-      if (!isFocused || disabled) {return;}
+      if (!isFocused || disabled) {
+        return;
+      }
 
       if (key.return || input === ' ') {
         onPress();
@@ -39,16 +41,8 @@ export function Button({
     { isActive: isFocused && !disabled }
   );
 
-  const borderColor = disabled
-    ? theme.muted
-    : isFocused
-      ? theme.primary
-      : theme.border;
-  const textColor = disabled
-    ? theme.muted
-    : isFocused
-      ? theme.primary
-      : theme.foreground;
+  const borderColor = disabled ? theme.muted : isFocused ? theme.primary : theme.border;
+  const textColor = disabled ? theme.muted : isFocused ? theme.primary : theme.foreground;
 
   return (
     <Box>

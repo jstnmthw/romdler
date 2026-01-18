@@ -18,11 +18,7 @@ type StatusBarProps = {
 /**
  * Status bar showing current operation status
  */
-export function StatusBar({
-  status,
-  command,
-  stats,
-}: StatusBarProps): React.JSX.Element {
+export function StatusBar({ status, command, stats }: StatusBarProps): React.JSX.Element {
   const { theme } = useTheme();
 
   const getStatusColor = (): string => {
@@ -52,12 +48,7 @@ export function StatusBar({
   };
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor={theme.border}
-      paddingX={1}
-    >
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} paddingX={1}>
       <Text color={theme.primary} bold>
         Status
       </Text>
@@ -71,9 +62,7 @@ export function StatusBar({
           <Text>
             <Text color={theme.foreground}>Found:</Text>
             <Text color={theme.info}>
-              {'.'
-                .repeat(Math.max(1, 14 - String(stats.found).length))
-                .concat(String(stats.found))}
+              {'.'.repeat(Math.max(1, 14 - String(stats.found).length)).concat(String(stats.found))}
             </Text>
           </Text>
           <Text>

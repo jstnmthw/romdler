@@ -37,9 +37,7 @@ export function ScrapeScreen(): React.JSX.Element {
           Artwork Scraper
         </Text>
         <Box marginTop={1}>
-          <Text color={theme.muted}>
-            Scrape functionality will be implemented in Phase 2.
-          </Text>
+          <Text color={theme.muted}>Scrape functionality will be implemented in Phase 2.</Text>
         </Box>
         <Box marginTop={1}>
           <Text color={theme.info}>

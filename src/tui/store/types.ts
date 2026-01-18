@@ -5,13 +5,7 @@
 import type { Config, ResolvedSystemConfig } from '../../config/index.js';
 
 /** Available screens in the TUI */
-export type Screen =
-  | 'home'
-  | 'download'
-  | 'scrape'
-  | 'dedupe'
-  | 'purge'
-  | 'settings';
+export type Screen = 'home' | 'download' | 'scrape' | 'dedupe' | 'purge' | 'settings';
 
 /** Task execution status */
 export type TaskStatus = 'idle' | 'running' | 'complete' | 'error';

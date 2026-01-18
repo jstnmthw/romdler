@@ -55,14 +55,24 @@ export const MOCK_LOG_ITEMS: LogItem[] = [
   { id: '1', status: 'downloaded', message: 'Super Mario Land (World).zip', size: '64 KB' },
   { id: '2', status: 'downloaded', message: 'Pokemon Red (USA, Europe).zip', size: '1.0 MB' },
   { id: '3', status: 'skipped', message: 'Tetris (World) (Rev A).zip' },
-  { id: '4', status: 'downloaded', message: 'Legend of Zelda, The - Links Awakening (USA).zip', size: '512 KB' },
+  {
+    id: '4',
+    status: 'downloaded',
+    message: 'Legend of Zelda, The - Links Awakening (USA).zip',
+    size: '512 KB',
+  },
   { id: '5', status: 'failed', message: 'Metroid II - Return of Samus (World).zip' },
   { id: '6', status: 'downloaded', message: 'Kirby Dream Land (USA, Europe).zip', size: '256 KB' },
   { id: '7', status: 'skipped', message: 'Dr. Mario (World).zip' },
   { id: '8', status: 'downloaded', message: 'Donkey Kong (World) (Rev A).zip', size: '32 KB' },
   { id: '9', status: 'info', message: 'Scanning directory...' },
   { id: '10', status: 'downloaded', message: 'Final Fantasy Adventure (USA).zip', size: '256 KB' },
-  { id: '11', status: 'downloaded', message: 'Mega Man - Dr. Wilys Revenge (USA).zip', size: '128 KB' },
+  {
+    id: '11',
+    status: 'downloaded',
+    message: 'Mega Man - Dr. Wilys Revenge (USA).zip',
+    size: '128 KB',
+  },
   { id: '12', status: 'skipped', message: 'Castlevania - The Adventure (USA, Europe).zip' },
 ];
 
@@ -80,7 +90,11 @@ export const MOCK_FILES_BY_PATH: Record<string, FileItem[]> = {
     { name: 'Super Mario Land (World).zip', size: '64 KB', date: '2024-01-15' },
     { name: 'Pokemon Red (USA, Europe).zip', size: '1.0 MB', date: '2024-01-14' },
     { name: 'Tetris (World) (Rev A).zip', size: '32 KB', date: '2024-01-13' },
-    { name: 'Legend of Zelda, The - Links Awakening (USA).zip', size: '512 KB', date: '2024-01-12' },
+    {
+      name: 'Legend of Zelda, The - Links Awakening (USA).zip',
+      size: '512 KB',
+      date: '2024-01-12',
+    },
     { name: 'Kirby Dream Land (USA, Europe).zip', size: '256 KB', date: '2024-01-11' },
     { name: 'Metroid II - Return of Samus (World).zip', size: '256 KB', date: '2024-01-10' },
     { name: 'Donkey Kong (World) (Rev A).zip', size: '32 KB', date: '2024-01-09' },
@@ -92,7 +106,11 @@ export const MOCK_FILES_BY_PATH: Record<string, FileItem[]> = {
     { name: 'Pokemon Crystal (USA, Europe).zip', size: '2.0 MB', date: '2024-01-15' },
     { name: 'Pokemon Gold (USA, Europe).zip', size: '2.0 MB', date: '2024-01-14' },
     { name: 'Legend of Zelda, The - Oracle of Ages (USA).zip', size: '1.0 MB', date: '2024-01-13' },
-    { name: 'Legend of Zelda, The - Oracle of Seasons (USA).zip', size: '1.0 MB', date: '2024-01-12' },
+    {
+      name: 'Legend of Zelda, The - Oracle of Seasons (USA).zip',
+      size: '1.0 MB',
+      date: '2024-01-12',
+    },
     { name: 'Dragon Quest III (Japan).zip', size: '1.5 MB', date: '2024-01-11' },
   ],
 
@@ -113,7 +131,11 @@ export const MOCK_FILES_BY_PATH: Record<string, FileItem[]> = {
   // SNES system - ROMs
   'Roms/SNES': [
     { name: 'Super Mario World (USA).zip', size: '512 KB', date: '2024-01-15' },
-    { name: 'Legend of Zelda, The - A Link to the Past (USA).zip', size: '1.0 MB', date: '2024-01-14' },
+    {
+      name: 'Legend of Zelda, The - A Link to the Past (USA).zip',
+      size: '1.0 MB',
+      date: '2024-01-14',
+    },
     { name: 'Super Metroid (Japan, USA) (En,Ja).zip', size: '3.0 MB', date: '2024-01-13' },
     { name: 'Chrono Trigger (USA).zip', size: '4.0 MB', date: '2024-01-12' },
     { name: 'Final Fantasy III (USA).zip', size: '3.0 MB', date: '2024-01-11' },

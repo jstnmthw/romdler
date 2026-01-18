@@ -66,17 +66,28 @@ export function ScrollableList<T>({
   // Handle keyboard navigation
   useInput(
     (input, key) => {
-      if (!isFocused || items.length === 0) {return;}
+      if (!isFocused || items.length === 0) {
+        return;
+      }
 
       if (isConfirmKey(input, key) && onSelect !== undefined) {
         const item = items[selectedIndex];
-        if (item !== undefined) {onSelect(selectedIndex, item);}
+        if (item !== undefined) {
+          onSelect(selectedIndex, item);
+        }
         return;
       }
 
       const direction = getNavDirection(input, key);
       if (direction !== null) {
-        const result = navigateList(direction, selectedIndex, scrollOffset, 0, items.length - 1, maxRows);
+        const result = navigateList(
+          direction,
+          selectedIndex,
+          scrollOffset,
+          0,
+          items.length - 1,
+          maxRows
+        );
         if (result.index !== selectedIndex) {
           setSelectedIndex(result.index);
           setScrollOffset(result.scrollOffset);
@@ -94,9 +105,7 @@ export function ScrollableList<T>({
   // Empty state
   if (items.length === 0) {
     return (
-      <Box flexDirection="column">
-        {emptyContent ?? <Text color={theme.muted}>No items</Text>}
-      </Box>
+      <Box flexDirection="column">{emptyContent ?? <Text color={theme.muted}>No items</Text>}</Box>
     );
   }
 
@@ -116,7 +125,9 @@ export function ScrollableList<T>({
           <Box key={key} flexDirection="row">
             <Box flexGrow={1}>{renderItem(item, actualIndex, isSelected)}</Box>
             {hasScrollbar && (
-              <Text color={theme.muted}>{getScrollbarChar(viewIndex, thumbPosition, thumbSize)}</Text>
+              <Text color={theme.muted}>
+                {getScrollbarChar(viewIndex, thumbPosition, thumbSize)}
+              </Text>
             )}
           </Box>
         );

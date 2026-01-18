@@ -49,7 +49,6 @@ describe('CLI argument parser', () => {
     });
 
     describe('command parsing', () => {
-
       it('parses download command explicitly', () => {
         const result = parseArgs(['download']);
         expect(result.command).toBe('download');
@@ -279,7 +278,14 @@ describe('CLI argument parser', () => {
       });
 
       it('parses multiple flags together', () => {
-        const result = parseArgs(['download', '--dry-run', '--config', 'test.json', '--limit', '3']);
+        const result = parseArgs([
+          'download',
+          '--dry-run',
+          '--config',
+          'test.json',
+          '--limit',
+          '3',
+        ]);
         expect(result.command).toBe('download');
         if (result.command === 'download') {
           expect(result.dryRun).toBe(true);

@@ -34,17 +34,27 @@ function navigateOption(
   options: SelectOption[],
   onChange: (value: string) => void
 ): void {
-  const newIndex = direction === 'up'
-    ? Math.max(0, currentIndex - 1)
-    : Math.min(options.length - 1, currentIndex + 1);
+  const newIndex =
+    direction === 'up'
+      ? Math.max(0, currentIndex - 1)
+      : Math.min(options.length - 1, currentIndex + 1);
   const newOption = options[newIndex];
-  if (newOption !== undefined) {onChange(newOption.value);}
+  if (newOption !== undefined) {
+    onChange(newOption.value);
+  }
 }
 
 /** Check if input is navigation key */
-function isNavKey(input: string, key: { upArrow: boolean; downArrow: boolean }): 'up' | 'down' | null {
-  if (key.upArrow || input === 'k') {return 'up';}
-  if (key.downArrow || input === 'j') {return 'down';}
+function isNavKey(
+  input: string,
+  key: { upArrow: boolean; downArrow: boolean }
+): 'up' | 'down' | null {
+  if (key.upArrow || input === 'k') {
+    return 'up';
+  }
+  if (key.downArrow || input === 'j') {
+    return 'down';
+  }
   return null;
 }
 
@@ -69,7 +79,9 @@ export function Select({
 
   useInput(
     (input, key) => {
-      if (!isFocused) {return;}
+      if (!isFocused) {
+        return;
+      }
 
       if (key.return || input === ' ') {
         setIsOpen(!isOpen);
@@ -101,9 +113,7 @@ export function Select({
 
   return (
     <Box>
-      {label !== undefined && label !== '' && (
-        <Text color={theme.muted}>{label}: </Text>
-      )}
+      {label !== undefined && label !== '' && <Text color={theme.muted}>{label}: </Text>}
       <Text color={borderColor}>[</Text>
       <Text color={textColor}> {paddedText} </Text>
       <Text color={borderColor}>▼</Text>

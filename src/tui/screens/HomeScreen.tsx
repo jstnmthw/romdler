@@ -60,20 +60,35 @@ type RunFocus = 'command' | 'system' | 'send';
 
 /** Parse size string to bytes for comparison */
 function parseSize(size: string | undefined): number {
-  if (size === undefined) {return 0;}
+  if (size === undefined) {
+    return 0;
+  }
   const match = size.match(/^([\d.]+)\s*(KB|MB|GB|B)?$/i);
-  if (match === null) {return 0;}
+  if (match === null) {
+    return 0;
+  }
   const value = parseFloat(match[1] ?? '0');
   const unit = (match[2] ?? 'B').toUpperCase();
-  const multipliers: Record<string, number> = { B: 1, KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 };
+  const multipliers: Record<string, number> = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+  };
   return value * (multipliers[unit] ?? 1);
 }
 
 /** Compare two file items by the given field */
 function compareFileItems(a: FileItem, b: FileItem, field: FileSortField): number {
-  if (field === 'name') {return a.name.localeCompare(b.name);}
-  if (field === 'size') {return parseSize(a.size) - parseSize(b.size);}
-  if (field === 'date') {return (a.date ?? '').localeCompare(b.date ?? '');}
+  if (field === 'name') {
+    return a.name.localeCompare(b.name);
+  }
+  if (field === 'size') {
+    return parseSize(a.size) - parseSize(b.size);
+  }
+  if (field === 'date') {
+    return (a.date ?? '').localeCompare(b.date ?? '');
+  }
   return 0;
 }
 
@@ -125,10 +140,15 @@ export function HomeScreen(): React.JSX.Element {
   // Build directory tree from config or use mock data
   const directoryNodes: TreeNode[] =
     state.systems.length > 0
-      ? [{
-          name: 'Roms',
-          children: state.systems.map((sys) => ({ name: sys.name, children: [{ name: 'Imgs' }] })),
-        }]
+      ? [
+          {
+            name: 'Roms',
+            children: state.systems.map((sys) => ({
+              name: sys.name,
+              children: [{ name: 'Imgs' }],
+            })),
+          },
+        ]
       : MOCK_DIRECTORY_NODES;
 
   const rootName = state.config?.downloadDir ?? MOCK_ROOT_NAME;
@@ -136,7 +156,12 @@ export function HomeScreen(): React.JSX.Element {
   // Combine real log entries with mock data
   const logItems: LogItem[] =
     state.log.length > 0
-      ? state.log.map((entry) => ({ id: entry.id, status: entry.status, message: entry.message, size: entry.details }))
+      ? state.log.map((entry) => ({
+          id: entry.id,
+          status: entry.status,
+          message: entry.message,
+          size: entry.details,
+        }))
       : MOCK_LOG_ITEMS;
 
   // Handle directory selection
@@ -171,16 +196,33 @@ export function HomeScreen(): React.JSX.Element {
       const direction = key.shift ? -1 : 1;
       const newFocus = cycleValue(focusArea, FOCUS_AREAS, direction);
       setFocusArea(newFocus);
-      if (newFocus === 'run') {setRunFocus(key.shift ? 'send' : 'command');}
+      if (newFocus === 'run') {
+        setRunFocus(key.shift ? 'send' : 'command');
+      }
       return;
     }
 
     // Hotkey navigation (p, d, w, q)
     if (!key.ctrl) {
-      if (input === 'p') {setFocusArea('run'); setRunFocus('command'); return;}
-      if (input === 'd') {setFocusArea('directory'); return;}
-      if (input === 'w') {setActiveTab('files'); setFocusArea('browse'); return;}
-      if (input === 'q') {setActiveTab('log'); setFocusArea('browse'); return;}
+      if (input === 'p') {
+        setFocusArea('run');
+        setRunFocus('command');
+        return;
+      }
+      if (input === 'd') {
+        setFocusArea('directory');
+        return;
+      }
+      if (input === 'w') {
+        setActiveTab('files');
+        setFocusArea('browse');
+        return;
+      }
+      if (input === 'q') {
+        setActiveTab('log');
+        setFocusArea('browse');
+        return;
+      }
     }
 
     // Navigate within run section using arrow keys
@@ -288,11 +330,15 @@ export function HomeScreen(): React.JSX.Element {
 
 /** Format bytes to human readable string */
 function formatBytes(bytes: number): string {
-  if (bytes === 0) {return '0 B';}
+  if (bytes === 0) {
+    return '0 B';
+  }
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   const sizeUnit = sizes[i];
-  if (sizeUnit === undefined) {return `${bytes} B`;}
+  if (sizeUnit === undefined) {
+    return `${bytes} B`;
+  }
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizeUnit}`;
 }

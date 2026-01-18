@@ -36,7 +36,7 @@ export function Header({ subtitle }: HeaderProps): React.JSX.Element {
       ))}
       {/* Version line */}
       <Text>
-        <Text color={theme.foreground}>  Romdler </Text>
+        <Text color={theme.foreground}> Romdler </Text>
         <Text color={theme.muted}>v{VERSION}</Text>
         {subtitle !== undefined && subtitle !== '' && (
           <Text color={theme.muted}> - {subtitle}</Text>

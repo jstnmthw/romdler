@@ -29,9 +29,7 @@ export function useConfig(): ConfigHook {
   const load = useCallback(
     (configPath?: string) => {
       const config = loadConfig(configPath);
-      const systems = config.systems.map((sys) =>
-        resolveSystemConfig(sys, config)
-      );
+      const systems = config.systems.map((sys) => resolveSystemConfig(sys, config));
       dispatch({ type: 'SET_CONFIG', config, systems });
     },
     [dispatch]

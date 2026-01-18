@@ -54,12 +54,7 @@ export function RunSection({
   const { theme } = useTheme();
 
   return (
-    <Box
-      borderStyle="single"
-      borderColor={theme.border}
-      paddingX={1}
-      flexDirection="column"
-    >
+    <Box borderStyle="single" borderColor={theme.border} paddingX={1} flexDirection="column">
       {/* Title */}
       <Box marginTop={-1} marginLeft={-1}>
         <Text color={theme.primary} bold>
