@@ -557,41 +557,6 @@ pnpm test:watch # Run tests in watch mode
 pnpm build      # Build TypeScript to dist/
 ```
 
-### Project Structure
-
-```
-romdler/
-├── src/
-│   ├── cli/          # CLI argument parsing
-│   ├── config/       # Configuration loading and validation
-│   ├── systems/      # System registry
-│   │   ├── definitions.ts # System shortcodes (edit this to add systems)
-│   │   └── registry.ts    # Lookup functions
-│   ├── http/         # HTTP fetching with retries
-│   ├── parser/       # HTML parsing with Cheerio
-│   ├── filter/       # Whitelist/blacklist filtering
-│   ├── downloader/   # Streaming download logic
-│   ├── scraper/      # Artwork downloader
-│   │   ├── adapters/      # Adapter interface & registry
-│   │   ├── libretro/      # Libretro Thumbnails adapter
-│   │   ├── screenscraper/ # ScreenScraper API adapter
-│   │   ├── hasher.ts      # CRC32 hash calculation
-│   │   ├── scanner.ts     # Directory scanner
-│   │   ├── downloader.ts  # Image downloader
-│   │   └── reporter.ts    # Scrape results reporter
-│   ├── purge/        # Blacklist-based file removal
-│   ├── dedupe/       # Duplicate ROM detection and removal
-│   ├── ui/           # Console rendering
-│   ├── utils/        # URL resolution, filename sanitization
-│   ├── types/        # Shared TypeScript types
-│   └── index.ts      # Main entry point
-├── tests/            # Unit tests
-├── docs/             # Documentation
-├── app.config.json   # Configuration file
-├── app.config.example.json  # Example config
-└── README.md         # This file
-```
-
 ---
 
 ## Reference
