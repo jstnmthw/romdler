@@ -38,21 +38,22 @@ Unlike simple clean/variant detection, dedupe uses configurable preferences to *
 
 ## Configuration
 
-Add a `dedupe` section to your `app.config.json`:
+Add a `dedupe` section to `defaults` (or per-system) in your `app.config.json`:
 
 ```json
 {
-  "dedupe": {
-    "regions": ["USA", "World", "Europe", "Japan"],
-    "avoid": [
-      "Proto", "Beta", "Sample", "Demo", "Rev", "Alt",
-      "Virtual Console", "Retro-Bit", "Pixel Heart",
-      "Switch Online", "GameCube", "Unl", "Pirate"
-    ],
-    "tiebreaker": "shortest"
-  }
+  "downloadDir": "./downloads/roms",
+  "defaults": {
+    "dedupe": {
+      "regions": ["USA", "World", "Europe", "Japan"],
+      "tiebreaker": "shortest"
+    }
+  },
+  "systems": [...]
 }
 ```
+
+Most users don't need to configure dedupe - the defaults work well. Only customize if you want different region priority or tiebreaker behavior.
 
 ### Options
 
@@ -74,7 +75,7 @@ The default avoid list includes common unwanted variants:
 | Platforms | `GameCube`, `Wii U`, `3DS`, `NSO`, `e-Reader` |
 | Special editions | `iam8bit`, `Limited Run`, `Arcade Archives`, `Mini Console` |
 | Mini consoles | `Genesis Mini`, `SNES Classic`, `NES Classic` |
-| Compilations | `Capcom Classics`, `Namco Museum`, `Mega Man Legacy`, `Disney Classic` |
+| Compilations | `Capcom Classics`, `Namco Museum`, `Konami Collector`, `Anniversary Collection`, `Mega Man Legacy`, `Disney Classic` |
 
 ### Multi-Region Support
 
