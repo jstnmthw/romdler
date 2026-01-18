@@ -28,13 +28,13 @@ The dedupe module identifies and removes duplicate ROM files using preference-ba
 
 ```bash
 # Analyze and move duplicates to deleted/ folder
-pnpm start -- dedupe
+pnpm cli dedupe
 
 # Preview what would be moved (no changes)
-pnpm start -- dedupe --dry-run
+pnpm cli dedupe --dry-run
 
 # Limit to first N moves
-pnpm start -- dedupe --limit 5
+pnpm cli dedupe --limit 5
 ```
 
 ## How It Works

@@ -16,6 +16,7 @@ Turn scattered ROM downloads into a clean, deduplicated, artwork-ready game libr
   - [Filtering](#filtering)
   - [Scraper Configuration](#scraper-configuration)
 - [Commands](#commands)
+  - [Help](#help)
   - [Download](#download)
   - [Scrape](#scrape)
   - [Purge](#purge)
@@ -73,11 +74,14 @@ Create an `app.config.json` file in the project root:
 ### Run It
 
 ```bash
+# Show help
+pnpm cli help
+
 # Preview what would be downloaded
-pnpm start -- --dry-run
+pnpm cli download --dry-run
 
 # Download files
-pnpm start
+pnpm cli download
 ```
 
 ## Configuration
@@ -253,22 +257,37 @@ Custom systems can also override built-in definitions if needed.
 
 ## Commands
 
+### Help
+
+Use the `help` command to see available commands and options.
+
+```bash
+# Show main help
+pnpm cli help
+pnpm cli --help
+pnpm cli -h
+
+# Show command-specific help
+pnpm cli help download
+pnpm cli download --help
+```
+
 ### Download
 
-The default command downloads ZIP files from HTML table directory listings.
+The `download` command downloads ZIP files from HTML table directory listings.
 
 ```bash
 # Preview what would be downloaded
-pnpm start -- --dry-run
+pnpm cli download --dry-run
 
 # Download files
-pnpm start
+pnpm cli download
 
 # Download only the first 5 files
-pnpm start -- --limit 5
+pnpm cli download --limit 5
 
 # Use a custom config file
-pnpm start -- --config ./my-config.json
+pnpm cli download --config ./my-config.json
 ```
 
 ### Scrape
@@ -277,21 +296,21 @@ The `scrape` command downloads cover art for your ROMs using multiple sources.
 
 ```bash
 # Scrape images for all ROMs in downloadDir
-pnpm start -- scrape
+pnpm cli scrape
 
 # Preview what would be scraped (no downloads)
-pnpm start -- scrape --dry-run
+pnpm cli scrape --dry-run
 
 # Force re-download (overwrite existing images)
-pnpm start -- scrape --force
+pnpm cli scrape --force
 
 # Specify media type
-pnpm start -- scrape --media box-2D    # Box art (default)
-pnpm start -- scrape --media ss        # Screenshots
-pnpm start -- scrape --media sstitle   # Title screens
+pnpm cli scrape --media box-2D    # Box art (default)
+pnpm cli scrape --media ss        # Screenshots
+pnpm cli scrape --media sstitle   # Title screens
 
 # Specify region priority
-pnpm start -- scrape --region us,wor,eu,jp
+pnpm cli scrape --region us,wor,eu,jp
 ```
 
 #### Artwork Output
@@ -315,13 +334,13 @@ The `purge` command removes files from your download directory that match your b
 
 ```bash
 # Preview what would be removed
-pnpm start -- purge --dry-run
+pnpm cli purge --dry-run
 
 # Remove files matching blacklist patterns
-pnpm start -- purge
+pnpm cli purge
 
 # Limit to first N deletions
-pnpm start -- purge --limit 10
+pnpm cli purge --limit 10
 ```
 
 For detailed documentation, see [src/purge/README.md](src/purge/README.md).
@@ -332,10 +351,10 @@ The `dedupe` command identifies and removes duplicate ROM files using preference
 
 ```bash
 # Preview what would be moved
-pnpm start -- dedupe --dry-run
+pnpm cli dedupe --dry-run
 
 # Move duplicates to deleted/ folder
-pnpm start -- dedupe
+pnpm cli dedupe
 ```
 
 For detailed documentation, see [src/dedupe/README.md](src/dedupe/README.md).
@@ -448,6 +467,7 @@ All options across all commands in one table:
 
 | Option            | Short       | Commands | Description                                             |
 | ----------------- | ----------- | -------- | ------------------------------------------------------- |
+| `--help`          | `-h`        | all      | Show help for the command                               |
 | `--dry-run`       | `-n`        | all      | Preview mode - show what would happen without executing |
 | `--limit <N>`     | `-l <N>`    | all      | Limit operations to first N items                       |
 | `--config <path>` | `-c <path>` | all      | Use custom config file path                             |
@@ -548,7 +568,8 @@ For the full list with all aliases, see [`src/systems/definitions.ts`](src/syste
 ### Available Scripts
 
 ```bash
-pnpm start      # Run the application
+pnpm cli        # Run the CLI (requires a command)
+pnpm cli help   # Show available commands
 pnpm typecheck  # Type check without emitting
 pnpm lint       # Run ESLint
 pnpm lint:fix   # Run ESLint with auto-fix

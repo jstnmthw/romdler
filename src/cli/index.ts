@@ -7,4 +7,8 @@ export {
   type ScrapeCliArgs,
   type PurgeCliArgs,
   type DedupeCliArgs,
+  type HelpCliArgs,
+  type NoCommandArgs,
 } from './args.js';
+
+export { getHelpText, getUsageText } from './help.js';

@@ -61,7 +61,7 @@ The folder name defaults to the system shortcode (e.g., `gbc`, `snes`). You can 
 
 Run:
 ```bash
-pnpm start -- scrape
+pnpm cli scrape
 ```
 
 The scraper will process each system in order, downloading artwork to the `Imgs/` subdirectory of each system's folder. Libretro is used by default (no config needed).
@@ -297,22 +297,22 @@ Media type availability depends on the source adapter:
 
 ```bash
 # Preview what would be downloaded
-pnpm start -- scrape --dry-run      # or -n
+pnpm cli scrape --dry-run      # or -n
 
 # Force re-download (overwrite existing)
-pnpm start -- scrape --force        # or -f
+pnpm cli scrape --force        # or -f
 
 # Limit to first N files
-pnpm start -- scrape --limit 10     # or -l 10
+pnpm cli scrape --limit 10     # or -l 10
 
 # Override media type
-pnpm start -- scrape --media ss     # or -m ss
+pnpm cli scrape --media ss     # or -m ss
 
 # Override region priority
-pnpm start -- scrape --region us,eu,jp  # or -r us,eu,jp
+pnpm cli scrape --region us,eu,jp  # or -r us,eu,jp
 
 # Use custom config file
-pnpm start -- scrape --config ./my-config.json  # or -c ./my-config.json
+pnpm cli scrape --config ./my-config.json  # or -c ./my-config.json
 ```
 
 | Option | Short | Description |

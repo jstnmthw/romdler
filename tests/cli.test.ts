@@ -1,21 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { parseArgs } from '../src/cli/index.js';
+import { parseArgs, getHelpText, getUsageText } from '../src/cli/index.js';
 
 describe('CLI argument parser', () => {
   describe('parseArgs', () => {
-    it('returns defaults with empty args', () => {
+    it('returns no command with empty args', () => {
       const result = parseArgs([]);
 
-      expect(result.command).toBe('download');
-      expect(result.dryRun).toBe(false);
-      expect(result.configPath).toBeUndefined();
-      expect(result.limit).toBeUndefined();
+      expect(result.command).toBeUndefined();
     });
 
     describe('command parsing', () => {
-      it('defaults to download command', () => {
+      it('returns undefined command when no command provided', () => {
         const result = parseArgs([]);
-        expect(result.command).toBe('download');
+        expect(result.command).toBeUndefined();
       });
 
       it('parses download command explicitly', () => {
@@ -47,21 +44,27 @@ describe('CLI argument parser', () => {
       it('skips leading -- delimiter', () => {
         const result = parseArgs(['--', 'scrape', '--dry-run']);
         expect(result.command).toBe('scrape');
-        expect(result.dryRun).toBe(true);
+        if (result.command === 'scrape') {
+          expect(result.dryRun).toBe(true);
+        }
       });
 
       it('parses flags after command', () => {
         const result = parseArgs(['purge', '--dry-run', '--limit', '5']);
         expect(result.command).toBe('purge');
-        expect(result.dryRun).toBe(true);
-        expect(result.limit).toBe(5);
+        if (result.command === 'purge') {
+          expect(result.dryRun).toBe(true);
+          expect(result.limit).toBe(5);
+        }
       });
 
       it('parses dedupe with flags', () => {
         const result = parseArgs(['dedupe', '-n', '-l', '10']);
         expect(result.command).toBe('dedupe');
-        expect(result.dryRun).toBe(true);
-        expect(result.limit).toBe(10);
+        if (result.command === 'dedupe') {
+          expect(result.dryRun).toBe(true);
+          expect(result.limit).toBe(10);
+        }
       });
     });
 
@@ -142,107 +145,229 @@ describe('CLI argument parser', () => {
       });
     });
 
-    it('parses --dry-run flag', () => {
-      const result = parseArgs(['--dry-run']);
+    describe('global options (require explicit command)', () => {
+      it('parses --dry-run flag', () => {
+        const result = parseArgs(['download', '--dry-run']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.dryRun).toBe(true);
+        }
+      });
 
-      expect(result.dryRun).toBe(true);
+      it('parses -n short flag for dry-run', () => {
+        const result = parseArgs(['download', '-n']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.dryRun).toBe(true);
+        }
+      });
+
+      it('parses --config with path', () => {
+        const result = parseArgs(['download', '--config', './custom.json']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.configPath).toBe('./custom.json');
+        }
+      });
+
+      it('parses -c short flag for config', () => {
+        const result = parseArgs(['download', '-c', '/path/to/config.json']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.configPath).toBe('/path/to/config.json');
+        }
+      });
+
+      it('parses --limit with positive integer', () => {
+        const result = parseArgs(['download', '--limit', '10']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBe(10);
+        }
+      });
+
+      it('parses -l short flag for limit', () => {
+        const result = parseArgs(['download', '-l', '5']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBe(5);
+        }
+      });
+
+      it('ignores --limit with zero value', () => {
+        const result = parseArgs(['download', '--limit', '0']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBeUndefined();
+        }
+      });
+
+      it('ignores --limit with negative value', () => {
+        const result = parseArgs(['download', '--limit', '-5']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBeUndefined();
+        }
+      });
+
+      it('ignores --limit with non-numeric value', () => {
+        const result = parseArgs(['download', '--limit', 'abc']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBeUndefined();
+        }
+      });
+
+      it('ignores --config without value', () => {
+        const result = parseArgs(['download', '--config']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.configPath).toBeUndefined();
+        }
+      });
+
+      it('ignores --config when next arg starts with dash', () => {
+        const result = parseArgs(['download', '--config', '--dry-run']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.configPath).toBeUndefined();
+          expect(result.dryRun).toBe(true);
+        }
+      });
+
+      it('ignores --limit without value', () => {
+        const result = parseArgs(['download', '--limit']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBeUndefined();
+        }
+      });
+
+      it('parses multiple flags together', () => {
+        const result = parseArgs(['download', '--dry-run', '--config', 'test.json', '--limit', '3']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.dryRun).toBe(true);
+          expect(result.configPath).toBe('test.json');
+          expect(result.limit).toBe(3);
+        }
+      });
+
+      it('parses flags in any order', () => {
+        const result = parseArgs(['download', '-l', '7', '-c', 'my.json', '-n']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.dryRun).toBe(true);
+          expect(result.configPath).toBe('my.json');
+          expect(result.limit).toBe(7);
+        }
+      });
+
+      it('ignores unknown arguments', () => {
+        const result = parseArgs(['download', '--unknown', 'value', '--dry-run']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.dryRun).toBe(true);
+          expect(result.configPath).toBeUndefined();
+          expect(result.limit).toBeUndefined();
+        }
+      });
+
+      it('handles float values for limit by truncating', () => {
+        const result = parseArgs(['download', '--limit', '5.9']);
+        expect(result.command).toBe('download');
+        if (result.command === 'download') {
+          expect(result.limit).toBe(5);
+        }
+      });
     });
 
-    it('parses -n short flag for dry-run', () => {
-      const result = parseArgs(['-n']);
+    describe('help command', () => {
+      it('parses help command', () => {
+        const result = parseArgs(['help']);
+        expect(result.command).toBe('help');
+      });
 
-      expect(result.dryRun).toBe(true);
+      it('parses --help flag', () => {
+        const result = parseArgs(['--help']);
+        expect(result.command).toBe('help');
+      });
+
+      it('parses -h short flag', () => {
+        const result = parseArgs(['-h']);
+        expect(result.command).toBe('help');
+      });
+
+      it('parses help with subcommand', () => {
+        const result = parseArgs(['help', 'download']);
+        expect(result.command).toBe('help');
+        if (result.command === 'help') {
+          expect(result.helpCommand).toBe('download');
+        }
+      });
+
+      it('parses command with --help flag', () => {
+        const result = parseArgs(['scrape', '--help']);
+        expect(result.command).toBe('help');
+        if (result.command === 'help') {
+          expect(result.helpCommand).toBe('scrape');
+        }
+      });
+
+      it('parses command with -h flag', () => {
+        const result = parseArgs(['dedupe', '-h']);
+        expect(result.command).toBe('help');
+        if (result.command === 'help') {
+          expect(result.helpCommand).toBe('dedupe');
+        }
+      });
+    });
+  });
+
+  describe('getHelpText', () => {
+    it('returns main help for undefined command', () => {
+      const text = getHelpText(undefined);
+      expect(text).toContain('romdler');
+      expect(text).toContain('Commands:');
     });
 
-    it('parses --config with path', () => {
-      const result = parseArgs(['--config', './custom.json']);
-
-      expect(result.configPath).toBe('./custom.json');
+    it('returns main help for help command', () => {
+      const text = getHelpText('help');
+      expect(text).toContain('romdler');
+      expect(text).toContain('Commands:');
     });
 
-    it('parses -c short flag for config', () => {
-      const result = parseArgs(['-c', '/path/to/config.json']);
-
-      expect(result.configPath).toBe('/path/to/config.json');
+    it('returns download help', () => {
+      const text = getHelpText('download');
+      expect(text).toContain('download');
+      expect(text).toContain('Download ROM files');
     });
 
-    it('parses --limit with positive integer', () => {
-      const result = parseArgs(['--limit', '10']);
-
-      expect(result.limit).toBe(10);
+    it('returns scrape help', () => {
+      const text = getHelpText('scrape');
+      expect(text).toContain('scrape');
+      expect(text).toContain('cover artwork');
     });
 
-    it('parses -l short flag for limit', () => {
-      const result = parseArgs(['-l', '5']);
-
-      expect(result.limit).toBe(5);
+    it('returns purge help', () => {
+      const text = getHelpText('purge');
+      expect(text).toContain('purge');
+      expect(text).toContain('blacklist');
     });
 
-    it('ignores --limit with zero value', () => {
-      const result = parseArgs(['--limit', '0']);
-
-      expect(result.limit).toBeUndefined();
+    it('returns dedupe help', () => {
+      const text = getHelpText('dedupe');
+      expect(text).toContain('dedupe');
+      expect(text).toContain('duplicate');
     });
+  });
 
-    it('ignores --limit with negative value', () => {
-      const result = parseArgs(['--limit', '-5']);
-
-      expect(result.limit).toBeUndefined();
-    });
-
-    it('ignores --limit with non-numeric value', () => {
-      const result = parseArgs(['--limit', 'abc']);
-
-      expect(result.limit).toBeUndefined();
-    });
-
-    it('ignores --config without value', () => {
-      const result = parseArgs(['--config']);
-
-      expect(result.configPath).toBeUndefined();
-    });
-
-    it('ignores --config when next arg starts with dash', () => {
-      const result = parseArgs(['--config', '--dry-run']);
-
-      expect(result.configPath).toBeUndefined();
-      expect(result.dryRun).toBe(true);
-    });
-
-    it('ignores --limit without value', () => {
-      const result = parseArgs(['--limit']);
-
-      expect(result.limit).toBeUndefined();
-    });
-
-    it('parses multiple flags together', () => {
-      const result = parseArgs(['--dry-run', '--config', 'test.json', '--limit', '3']);
-
-      expect(result.dryRun).toBe(true);
-      expect(result.configPath).toBe('test.json');
-      expect(result.limit).toBe(3);
-    });
-
-    it('parses flags in any order', () => {
-      const result = parseArgs(['-l', '7', '-c', 'my.json', '-n']);
-
-      expect(result.dryRun).toBe(true);
-      expect(result.configPath).toBe('my.json');
-      expect(result.limit).toBe(7);
-    });
-
-    it('ignores unknown arguments', () => {
-      const result = parseArgs(['--unknown', 'value', '--dry-run']);
-
-      expect(result.dryRun).toBe(true);
-      expect(result.configPath).toBeUndefined();
-      expect(result.limit).toBeUndefined();
-    });
-
-    it('handles float values for limit by truncating', () => {
-      const result = parseArgs(['--limit', '5.9']);
-
-      expect(result.limit).toBe(5);
+  describe('getUsageText', () => {
+    it('returns brief usage message', () => {
+      const text = getUsageText();
+      expect(text).toContain('Usage:');
+      expect(text).toContain('pnpm cli');
+      expect(text).toContain('help');
     });
   });
 });

@@ -26,7 +26,7 @@ Downloads ZIP files from HTML table directory listings with streaming, atomic wr
 
 ## Quick Start
 
-The downloader is the default command. It processes all systems defined in your `app.config.json`, parsing HTML directory listings and downloading matching files:
+The `download` command processes all systems defined in your `app.config.json`, parsing HTML directory listings and downloading matching files:
 
 ```json
 {
@@ -44,10 +44,10 @@ The downloader is the default command. It processes all systems defined in your 
 Run:
 ```bash
 # Preview what would be downloaded
-pnpm start -- --dry-run
+pnpm cli download --dry-run
 
 # Download files
-pnpm start
+pnpm cli download
 ```
 
 The folder name defaults to the system shortcode. Override it with an explicit `folder` field if needed.
@@ -56,13 +56,13 @@ The folder name defaults to the system shortcode. Override it with an explicit `
 
 ```bash
 # Preview what would be downloaded
-pnpm start -- --dry-run          # or -n
+pnpm cli download --dry-run          # or -n
 
 # Limit to first N files
-pnpm start -- --limit 10         # or -l 10
+pnpm cli download --limit 10         # or -l 10
 
 # Use custom config file
-pnpm start -- --config ./my-config.json  # or -c ./my-config.json
+pnpm cli download --config ./my-config.json  # or -c ./my-config.json
 ```
 
 | Option | Short | Description |

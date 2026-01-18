@@ -20,13 +20,13 @@ The purge command processes all systems defined in your `app.config.json`, remov
 
 ```bash
 # Preview what would be removed (no deletions)
-pnpm start -- purge --dry-run
+pnpm cli purge --dry-run
 
 # Remove files matching blacklist patterns
-pnpm start -- purge
+pnpm cli purge
 
 # Limit to first N deletions
-pnpm start -- purge --limit 10
+pnpm cli purge --limit 10
 ```
 
 ## How It Works
@@ -98,9 +98,9 @@ Matches: `Game (Japan).zip` OR files containing both "Beta" AND "Proto"
 ## CLI Options
 
 ```bash
-pnpm start -- purge --dry-run          # or -n
-pnpm start -- purge --limit 10         # or -l 10
-pnpm start -- purge --config ./my.json # or -c ./my.json
+pnpm cli purge --dry-run          # or -n
+pnpm cli purge --limit 10         # or -l 10
+pnpm cli purge --config ./my.json # or -c ./my.json
 ```
 
 | Option | Short | Description |

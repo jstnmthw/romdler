@@ -7,9 +7,12 @@ import {
 } from './config/index.js';
 import {
   parseArgs,
+  getHelpText,
+  getUsageText,
   type ScrapeCliArgs,
   type PurgeCliArgs,
   type DedupeCliArgs,
+  type HelpCliArgs,
 } from './cli/index.js';
 import { fetchHtml, isHttpError } from './http/index.js';
 import { parseTableLinks, filterZipLinks } from './parser/index.js';
@@ -251,8 +254,31 @@ async function runDedupeCommand(config: Config, cliArgs: DedupeCliArgs): Promise
   }
 }
 
+function runHelpCommand(cliArgs: HelpCliArgs): void {
+  console.log(getHelpText(cliArgs.helpCommand));
+  process.exit(0);
+}
+
+function runNoCommand(): void {
+  console.error('Error: No command specified.\n');
+  console.error(getUsageText());
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
   const cliArgs = parseArgs(process.argv.slice(2));
+
+  // Handle help command (no config needed)
+  if (cliArgs.command === 'help') {
+    runHelpCommand(cliArgs);
+    return;
+  }
+
+  // Handle no command provided
+  if (cliArgs.command === undefined) {
+    runNoCommand();
+    return;
+  }
 
   // Load configuration
   let config: Config;

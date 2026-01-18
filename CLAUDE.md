@@ -377,8 +377,10 @@ export type { ExampleResult, ExampleOptions } from './types.js';
 
 | Command | Purpose |
 |---------|---------|
-| `pnpm start` | Run the app |
-| `pnpm start -- scrape --dry-run` | Preview scraper |
+| `pnpm cli <command>` | Run the CLI (command required) |
+| `pnpm cli help` | Show available commands and options |
+| `pnpm cli download --dry-run` | Preview downloads |
+| `pnpm cli scrape --dry-run` | Preview scraper |
 | `pnpm typecheck` | TypeScript validation |
 | `pnpm lint` | ESLint check |
 | `pnpm lint:fix` | Auto-fix lint issues |
