@@ -8,12 +8,12 @@ import {
 import {
   parseArgs,
   getHelpText,
-  getUsageText,
   type ScrapeCliArgs,
   type PurgeCliArgs,
   type DedupeCliArgs,
   type HelpCliArgs,
 } from './cli/index.js';
+import { launchTUI } from './tui/index.js';
 import { fetchHtml, isHttpError } from './http/index.js';
 import { parseTableLinks, filterZipLinks } from './parser/index.js';
 import { applyFilters } from './filter/index.js';
@@ -259,10 +259,9 @@ function runHelpCommand(cliArgs: HelpCliArgs): void {
   process.exit(0);
 }
 
-function runNoCommand(): void {
-  console.error('Error: No command specified.\n');
-  console.error(getUsageText());
-  process.exit(1);
+async function runTUI(configPath?: string): Promise<void> {
+  await launchTUI({ configPath });
+  process.exit(0);
 }
 
 async function main(): Promise<void> {
@@ -274,9 +273,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Handle no command provided
+  // Handle no command provided - launch TUI
   if (cliArgs.command === undefined) {
-    runNoCommand();
+    await runTUI(cliArgs.configPath);
     return;
   }
 

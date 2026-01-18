@@ -9,11 +9,46 @@ describe('CLI argument parser', () => {
       expect(result.command).toBeUndefined();
     });
 
-    describe('command parsing', () => {
+    describe('no command (TUI launch)', () => {
       it('returns undefined command when no command provided', () => {
         const result = parseArgs([]);
         expect(result.command).toBeUndefined();
       });
+
+      it('parses --config when no command provided', () => {
+        const result = parseArgs(['--config', './custom.json']);
+        expect(result.command).toBeUndefined();
+        if (result.command === undefined) {
+          expect(result.configPath).toBe('./custom.json');
+        }
+      });
+
+      it('parses -c short flag when no command provided', () => {
+        const result = parseArgs(['-c', '/path/to/config.json']);
+        expect(result.command).toBeUndefined();
+        if (result.command === undefined) {
+          expect(result.configPath).toBe('/path/to/config.json');
+        }
+      });
+
+      it('returns undefined configPath when --config without value', () => {
+        const result = parseArgs(['--config']);
+        expect(result.command).toBeUndefined();
+        if (result.command === undefined) {
+          expect(result.configPath).toBeUndefined();
+        }
+      });
+
+      it('ignores other flags when no command provided', () => {
+        const result = parseArgs(['--dry-run', '-c', 'test.json']);
+        expect(result.command).toBeUndefined();
+        if (result.command === undefined) {
+          expect(result.configPath).toBe('test.json');
+        }
+      });
+    });
+
+    describe('command parsing', () => {
 
       it('parses download command explicitly', () => {
         const result = parseArgs(['download']);

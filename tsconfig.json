@@ -5,6 +5,8 @@
     "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "outDir": "./dist",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "strict": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,

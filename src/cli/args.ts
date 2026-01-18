@@ -39,9 +39,10 @@ export interface HelpCliArgs {
   helpCommand?: Command;
 }
 
-/** Result when no command was provided */
+/** Result when no command was provided (launches TUI) */
 export interface NoCommandArgs {
   command: undefined;
+  configPath?: string;
 }
 
 /** Union type for all CLI args */
@@ -150,9 +151,18 @@ export function parseArgs(args: string[]): CliArgs {
     return { command: 'help' };
   }
 
-  // No command provided - return NoCommandArgs
+  // No command provided - parse config path and return NoCommandArgs (launches TUI)
   if (command === undefined) {
-    return { command: undefined };
+    let configPath: string | undefined = undefined;
+    for (let i = 0; i < argsToProcess.length; i++) {
+      const arg = argsToProcess[i];
+      const next = argsToProcess[i + 1];
+      if ((arg === '--config' || arg === '-c') && isValidArgValue(next)) {
+        configPath = next;
+        break;
+      }
+    }
+    return { command: undefined, configPath };
   }
 
   // Parse common arguments

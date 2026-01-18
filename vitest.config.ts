@@ -14,6 +14,8 @@ export default defineConfig({
         'dist/**',
         // Exclude UI module (console output, hard to unit test)
         'src/ui/**',
+        // Exclude TUI module (interactive terminal UI, requires ink-testing-library)
+        'src/tui/**',
         // Exclude main entry point (integration-level)
         'src/index.ts',
         // Exclude type-only files
