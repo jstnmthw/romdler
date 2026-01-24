@@ -21,6 +21,8 @@ Turn scattered ROM downloads into a clean, deduplicated, artwork-ready game libr
   - [Scrape](#scrape)
   - [Purge](#purge)
   - [Dedupe](#dedupe)
+  - [Format](#format)
+- [Format Configuration](#format-configuration)
 - [CLI Reference](#cli-reference)
 - [System Shortcodes](#system-shortcodes)
 - [Development](#development)
@@ -32,6 +34,7 @@ Turn scattered ROM downloads into a clean, deduplicated, artwork-ready game libr
 - **Streaming downloads** from HTML table directory listings with atomic writes
 - **Smart filtering** with AND/OR expression syntax for whitelist/blacklist
 - **Artwork scraping** from Libretro Thumbnails (no auth) and ScreenScraper.fr (CRC32-based)
+- **Artwork formatting** with custom canvas size, alignment, and padding for device-specific layouts
 - **Fuzzy matching** for Proto, Beta, and Unlicensed variants
 - **Duplicate detection** with preference-based selection (region priority, avoid tokens)
 - **Blacklist purging** to clean up unwanted files after download
@@ -100,6 +103,7 @@ Each system in the `systems` array requires:
 | ----------- | ---------- | -------- | ------------------------------------------------------------------------------------------- |
 | `system`    | `string`   | Yes      | System shortcode (e.g., `gbc`, `snes`, `psx`) - see [System Shortcodes](#system-shortcodes) |
 | `url`       | `string`   | Yes      | Archive directory URL to process                                                            |
+| `enabled`   | `boolean`  | No       | Enable/disable this system for all commands (default: `true`)                               |
 | `folder`    | `string`   | No       | Folder name within `downloadDir` (defaults to system shortcode)                             |
 | `tableId`   | `string`   | No       | Override default table ID                                                                   |
 | `whitelist` | `string[]` | No       | Override default whitelist                                                                  |
@@ -129,6 +133,7 @@ Global settings apply everywhere:
 | `retries`          | `number` | `2`             | Number of retry attempts for failed requests  |
 | `logLevel`         | `string` | `"info"`        | Log level: `"debug"`, `"info"`, or `"silent"` |
 | `scraper`          | `object` | `undefined`     | Scraper configuration (see below)             |
+| `format`           | `object` | `undefined`     | Format configuration (see [Format Configuration](#format-configuration)) |
 
 ### Filtering
 
@@ -459,21 +464,100 @@ downloads/roms/nes/
     └── Airball (USA) (RetroZone) (Pirate).zip
 ```
 
+### Format
+
+The `format` command formats artwork images with custom canvas size and alignment. This is useful for preparing artwork for specific devices like handheld emulators that expect images in a particular format.
+
+```bash
+# Preview what would be formatted
+pnpm cli format --dry-run
+
+# Format all artwork with config settings
+pnpm cli format
+
+# Overwrite existing formatted images
+pnpm cli format --force
+
+# Limit to first 5 images per system
+pnpm cli format --limit 5
+```
+
+#### How It Works
+
+1. **Scans** the `Imgs/` directory in each system folder for PNG/JPG images
+2. **Resizes** each image to fit within the configured max dimensions
+3. **Creates** a transparent canvas at the specified size
+4. **Composites** the resized image onto the canvas with the specified gravity/alignment
+5. **Saves** the result to `Imgs/<outputFolder>/` subdirectory
+
+#### Output Structure
+
+Formatted images are saved to a subfolder within the `Imgs/` directory:
+
+```
+downloads/roms/snes/
+├── Super Mario Kart (USA).zip
+└── Imgs/
+    ├── Super Mario Kart (USA).png      <- Original artwork
+    └── Formatted/                       <- Output folder (configurable)
+        └── Super Mario Kart (USA).png  <- Formatted artwork
+```
+
+---
+
+## Format Configuration
+
+Configure the format command via the `format` key in `app.config.json`:
+
+```json
+{
+  "format": {
+    "canvasWidth": 640,
+    "canvasHeight": 480,
+    "resizeMaxWidth": 320,
+    "resizeMaxHeight": 320,
+    "gravity": "west",
+    "padding": 20,
+    "outputFolder": "Formatted"
+  }
+}
+```
+
+| Option            | Type     | Default       | Description                                      |
+| ----------------- | -------- | ------------- | ------------------------------------------------ |
+| `canvasWidth`     | `number` | `640`         | Output canvas width in pixels (100-4000)         |
+| `canvasHeight`    | `number` | `480`         | Output canvas height in pixels (100-4000)        |
+| `resizeMaxWidth`  | `number` | `320`         | Max artwork width before compositing (50-2000)   |
+| `resizeMaxHeight` | `number` | `320`         | Max artwork height before compositing (50-2000)  |
+| `gravity`         | `string` | `"east"`      | Alignment: `east`, `west`, `center`, `north`, `south` |
+| `padding`         | `number` | `0`           | Padding from edge in pixels (0-500)              |
+| `outputFolder`    | `string` | `"Formatted"` | Subfolder name within `Imgs/` for output         |
+
+#### Gravity Options
+
+The `gravity` setting controls where the artwork is placed on the canvas:
+
+- `east` - Right side of canvas (default)
+- `west` - Left side of canvas
+- `center` - Center of canvas
+- `north` - Top of canvas
+- `south` - Bottom of canvas
+
 ---
 
 ## CLI Reference
 
 All options across all commands in one table:
 
-| Option            | Short       | Commands | Description                                             |
-| ----------------- | ----------- | -------- | ------------------------------------------------------- |
-| `--help`          | `-h`        | all      | Show help for the command                               |
-| `--dry-run`       | `-n`        | all      | Preview mode - show what would happen without executing |
-| `--limit <N>`     | `-l <N>`    | all      | Limit operations to first N items                       |
-| `--config <path>` | `-c <path>` | all      | Use custom config file path                             |
-| `--force`         | `-f`        | scrape   | Overwrite existing images                               |
-| `--media <type>`  | `-m <type>` | scrape   | Media type (box-2D, ss, sstitle, etc.)                  |
-| `--region <list>` | `-r <list>` | scrape   | Region priority (comma-separated)                       |
+| Option            | Short       | Commands       | Description                                             |
+| ----------------- | ----------- | -------------- | ------------------------------------------------------- |
+| `--help`          | `-h`        | all            | Show help for the command                               |
+| `--dry-run`       | `-n`        | all            | Preview mode - show what would happen without executing |
+| `--limit <N>`     | `-l <N>`    | all            | Limit operations to first N items                       |
+| `--config <path>` | `-c <path>` | all            | Use custom config file path                             |
+| `--force`         | `-f`        | scrape, format | Overwrite existing images                               |
+| `--media <type>`  | `-m <type>` | scrape         | Media type (box-2D, ss, sstitle, etc.)                  |
+| `--region <list>` | `-r <list>` | scrape         | Region priority (comma-separated)                       |
 
 ---
 

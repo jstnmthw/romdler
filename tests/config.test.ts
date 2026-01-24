@@ -384,4 +384,61 @@ describe('config loader', () => {
     // folder defaults to the shortcode used (sfc), not the canonical name
     expect(resolved.downloadDir).toBe(join('./downloads', 'sfc'));
   });
+
+  it('preserves folder name case sensitivity from system shortcode', () => {
+    const config = {
+      downloadDir: './downloads',
+      systems: [
+        {
+          system: 'GBC',
+          url: 'https://example.com/',
+        },
+      ],
+    };
+    writeFileSync(TEST_CONFIG_PATH, JSON.stringify(config));
+
+    const loaded = loadConfig(TEST_CONFIG_PATH);
+    const resolved = resolveSystemConfig(loaded.systems[0]!, loaded);
+
+    // System lookup is case-insensitive but folder uses exact case from config
+    expect(resolved.name).toBe('Nintendo - Game Boy Color');
+    expect(resolved.downloadDir).toBe(join('./downloads', 'GBC'));
+  });
+
+  it('enabled defaults to true when not specified', () => {
+    const config = {
+      downloadDir: './downloads',
+      systems: [
+        {
+          system: 'gbc',
+          url: 'https://example.com/',
+        },
+      ],
+    };
+    writeFileSync(TEST_CONFIG_PATH, JSON.stringify(config));
+
+    const loaded = loadConfig(TEST_CONFIG_PATH);
+    const resolved = resolveSystemConfig(loaded.systems[0]!, loaded);
+
+    expect(resolved.enabled).toBe(true);
+  });
+
+  it('respects enabled: false in system config', () => {
+    const config = {
+      downloadDir: './downloads',
+      systems: [
+        {
+          system: 'gbc',
+          url: 'https://example.com/',
+          enabled: false,
+        },
+      ],
+    };
+    writeFileSync(TEST_CONFIG_PATH, JSON.stringify(config));
+
+    const loaded = loadConfig(TEST_CONFIG_PATH);
+    const resolved = resolveSystemConfig(loaded.systems[0]!, loaded);
+
+    expect(resolved.enabled).toBe(false);
+  });
 });

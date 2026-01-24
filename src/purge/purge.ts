@@ -229,6 +229,13 @@ export async function runPurge(config: Config, options: PurgeOptions): Promise<P
 
   for (const systemConfig of config.systems) {
     const system = resolveSystemConfig(systemConfig, config);
+
+    // Skip disabled systems
+    if (!system.enabled) {
+      console.log(chalk.yellow(`  Skipping disabled system: ${system.name}`));
+      continue;
+    }
+
     const results = await purgeSystem(system, options);
     allResults.push(...results);
   }

@@ -370,6 +370,13 @@ export async function runDedupe(config: Config, options: DedupeOptions): Promise
 
   for (const systemConfig of config.systems) {
     const system = resolveSystemConfig(systemConfig, config);
+
+    // Skip disabled systems
+    if (!system.enabled) {
+      console.log(chalk.yellow(`  Skipping disabled system: ${system.name}`));
+      continue;
+    }
+
     console.log(chalk.cyan.bold(`\n━━━ ${system.name} ━━━`));
     const results = await dedupeSystem(system, options);
     allResults.push(...results);

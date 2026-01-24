@@ -11,6 +11,7 @@ import {
   type ScrapeCliArgs,
   type PurgeCliArgs,
   type DedupeCliArgs,
+  type FormatCliArgs,
   type HelpCliArgs,
 } from './cli/index.js';
 import { launchTUI } from './tui/index.js';
@@ -28,7 +29,26 @@ import { resolveAndExtract, sanitizeFilename } from './utils/index.js';
 import { runScraper } from './scraper/index.js';
 import { runPurge } from './purge/index.js';
 import { runDedupe } from './dedupe/index.js';
+import { runFormat, type FormatSettings } from './format/index.js';
 import type { FileEntry, UrlStats } from './types/index.js';
+
+/** Default format settings when not configured */
+const DEFAULT_FORMAT_SETTINGS: FormatSettings = {
+  canvasWidth: 640,
+  canvasHeight: 480,
+  resizeMaxWidth: 320,
+  resizeMaxHeight: 320,
+  gravity: 'east',
+  padding: 0,
+  outputFolder: 'Formatted',
+};
+
+/**
+ * Build format settings from config, using defaults for missing values
+ */
+function buildFormatSettings(config: Config): FormatSettings {
+  return { ...DEFAULT_FORMAT_SETTINGS, ...config.format };
+}
 
 async function processSystem(
   system: ResolvedSystemConfig,
@@ -185,6 +205,13 @@ async function runDownloadCommand(
   // Process each system
   for (const systemConfig of config.systems) {
     const system = resolveSystemConfig(systemConfig, config);
+
+    // Skip disabled systems
+    if (!system.enabled) {
+      renderer.info(`Skipping disabled system: ${system.name}`);
+      continue;
+    }
+
     const stats = await processSystem(system, config, renderer, dryRun, limit);
     allStats.push(stats);
     renderer.urlSummary(stats);
@@ -254,6 +281,26 @@ async function runDedupeCommand(config: Config, cliArgs: DedupeCliArgs): Promise
   }
 }
 
+async function runFormatCommand(config: Config, cliArgs: FormatCliArgs): Promise<void> {
+  const settings = buildFormatSettings(config);
+
+  try {
+    const results = await runFormat(config, {
+      dryRun: cliArgs.dryRun,
+      force: cliArgs.force,
+      settings,
+      limit: cliArgs.limit,
+    });
+
+    // Check for failures
+    const hasFailures = results.some((r) => r.status === 'failed');
+    process.exit(hasFailures ? 1 : 0);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : 'Format failed');
+    process.exit(1);
+  }
+}
+
 function runHelpCommand(cliArgs: HelpCliArgs): void {
   console.log(getHelpText(cliArgs.helpCommand));
   process.exit(0);
@@ -295,6 +342,8 @@ async function main(): Promise<void> {
     await runPurgeCommand(config, cliArgs);
   } else if (cliArgs.command === 'dedupe') {
     await runDedupeCommand(config, cliArgs);
+  } else if (cliArgs.command === 'format') {
+    await runFormatCommand(config, cliArgs);
   } else {
     const renderer = createRenderer(config.logLevel);
     renderer.banner(cliArgs.dryRun);

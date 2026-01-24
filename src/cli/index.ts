@@ -7,6 +7,7 @@ export {
   type ScrapeCliArgs,
   type PurgeCliArgs,
   type DedupeCliArgs,
+  type FormatCliArgs,
   type HelpCliArgs,
   type NoCommandArgs,
 } from './args.js';

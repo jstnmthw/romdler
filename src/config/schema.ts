@@ -102,6 +102,8 @@ const systemConfigSchema = z.object({
   system: z.string().min(1, 'System shortcode is required'),
   /** URL to the ROM directory listing */
   url: z.string().url('System URL must be a valid URL'),
+  /** Whether this system is enabled for processing (default: true) */
+  enabled: z.boolean().default(true),
   /** Folder name within downloadDir (defaults to system shortcode) */
   folder: z.string().min(1).optional(),
   /** Optional overrides for default settings */
@@ -109,6 +111,27 @@ const systemConfigSchema = z.object({
   whitelist: z.array(z.string()).optional(),
   blacklist: z.array(z.string()).optional(),
   dedupe: dedupePreferencesSchema.optional(),
+});
+
+/** Gravity/alignment options for image placement */
+const gravitySchema = z.enum(['east', 'west', 'center', 'north', 'south']);
+
+/** Artwork formatter configuration schema */
+const formatSchema = z.object({
+  /** Output canvas width in pixels */
+  canvasWidth: z.number().int().min(100).max(4000).default(640),
+  /** Output canvas height in pixels */
+  canvasHeight: z.number().int().min(100).max(4000).default(480),
+  /** Maximum width for resized artwork */
+  resizeMaxWidth: z.number().int().min(50).max(2000).default(320),
+  /** Maximum height for resized artwork */
+  resizeMaxHeight: z.number().int().min(50).max(2000).default(320),
+  /** Gravity/alignment for artwork placement on canvas */
+  gravity: gravitySchema.default('east'),
+  /** Padding from edge in pixels */
+  padding: z.number().int().min(0).max(500).default(0),
+  /** Output subfolder name within Imgs directory */
+  outputFolder: z.string().min(1).default('Formatted'),
 });
 
 /** Artwork scraper configuration schema */
@@ -157,6 +180,8 @@ export const configSchema = z.object({
   logLevel: z.enum(['debug', 'info', 'silent']).default('info'),
   /** Artwork scraper configuration */
   scraper: scraperSchema.optional(),
+  /** Artwork formatter configuration */
+  format: formatSchema.optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -169,6 +194,8 @@ export type LibretroConfigSchema = z.infer<typeof libretroConfigSchema>;
 export type ScreenScraperConfigSchema = z.infer<typeof screenscraperConfigSchema>;
 export type ScreenScraperCredentials = z.infer<typeof screenscraperCredentialsSchema>;
 export type ResizeConfigSchema = z.infer<typeof resizeSchema>;
+export type FormatConfigSchema = z.infer<typeof formatSchema>;
+export type GravityType = z.infer<typeof gravitySchema>;
 
 /** A system config with all defaults resolved */
 export type ResolvedSystemConfig = {
@@ -176,6 +203,8 @@ export type ResolvedSystemConfig = {
   name: string;
   /** URL to the ROM directory listing */
   url: string;
+  /** Whether this system is enabled for processing */
+  enabled: boolean;
   /** Full path to download directory (parent + folder) */
   downloadDir: string;
   /** System ID for artwork scraping (from registry) */
@@ -235,6 +264,7 @@ export function resolveSystemConfig(system: SystemConfig, config: Config): Resol
   return {
     name: systemInfo.name,
     url: system.url,
+    enabled: system.enabled ?? true,
     downloadDir: join(config.downloadDir, folder),
     systemId: systemInfo.systemId,
     tableId: system.tableId ?? config.defaults.tableId,

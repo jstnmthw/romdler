@@ -10,4 +10,6 @@ export {
   type CustomSystemDef,
   type ResolvedSystemConfig,
   type DedupePreferences,
+  type FormatConfigSchema,
+  type GravityType,
 } from './schema.js';

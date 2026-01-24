@@ -17,6 +17,7 @@ Commands:
   scrape      Download cover artwork for ROM files
   purge       Remove unwanted files matching blacklist patterns
   dedupe      Remove duplicate ROMs, keeping preferred versions
+  format      Format artwork for specific devices
   help        Show this help message
 
 Global Options:
@@ -30,6 +31,7 @@ Examples:
   pnpm cli download --dry-run           Preview downloads
   pnpm cli scrape --force               Re-download existing artwork
   pnpm cli dedupe --dry-run             Preview deduplication
+  pnpm cli format                       Format artwork with config settings
   pnpm cli help download                Show help for download command
 
 Configuration:
@@ -178,6 +180,58 @@ Examples:
   pnpm cli dedupe --limit 5             Process first 5 duplicate groups
 `.trim();
 
+/** Help text for the format command */
+const FORMAT_HELP = `
+${PROGRAM_NAME} format
+
+Format artwork images with custom canvas size and alignment.
+
+Usage:
+  pnpm cli format [options]
+
+Options:
+  -c, --config <path>    Path to config file (default: app.config.json)
+  -n, --dry-run          Preview files without processing
+  -l, --limit <n>        Process only first N images per system
+  -f, --force            Overwrite existing formatted images
+  -h, --help             Show this help message
+
+Configuration (app.config.json):
+  format.canvasWidth     Output canvas width in pixels (default: 640)
+  format.canvasHeight    Output canvas height in pixels (default: 480)
+  format.resizeMaxWidth  Max artwork width before compositing (default: 320)
+  format.resizeMaxHeight Max artwork height before compositing (default: 320)
+  format.gravity         Alignment: east, west, center, north, south (default: east)
+  format.padding         Padding from edge in pixels (default: 0)
+  format.outputFolder    Subfolder in Imgs/ for output (default: Formatted)
+
+Processing:
+  1. Scan Imgs/ directory for PNG/JPG images
+  2. Resize each image to fit within max dimensions
+  3. Create transparent canvas at specified size
+  4. Composite resized image with specified gravity
+  5. Save to Imgs/<outputFolder>/ subdirectory
+
+Examples:
+  pnpm cli format                       Format with config settings
+  pnpm cli format --dry-run             Preview what would be processed
+  pnpm cli format --force               Overwrite existing formatted images
+  pnpm cli format --limit 5             Format first 5 images per system
+
+Example Config:
+  {
+    "format": {
+      "canvasWidth": 640,
+      "canvasHeight": 480,
+      "resizeMaxWidth": 320,
+      "resizeMaxHeight": 320,
+      "gravity": "west",
+      "padding": 20,
+      "outputFolder": "RG35XX"
+    }
+  }
+`.trim();
+
 /** Help text for the help command */
 const HELP_HELP = `
 ${PROGRAM_NAME} help
@@ -195,6 +249,7 @@ Available Commands:
   scrape     Download cover artwork for ROM files
   purge      Remove unwanted files matching blacklist patterns
   dedupe     Remove duplicate ROMs, keeping preferred versions
+  format     Format artwork for specific devices
 
 Examples:
   pnpm cli help                         Show main help
@@ -208,6 +263,7 @@ const COMMAND_HELP: Record<Command, string> = {
   scrape: SCRAPE_HELP,
   purge: PURGE_HELP,
   dedupe: DEDUPE_HELP,
+  format: FORMAT_HELP,
   help: HELP_HELP,
 };
 
@@ -231,7 +287,7 @@ export function getUsageText(): string {
   return `
 Usage: pnpm cli <command> [options]
 
-Commands: download, scrape, purge, dedupe
+Commands: download, scrape, purge, dedupe, format
 
 Run 'pnpm cli help' for more information.
 Run 'pnpm cli <command> --help' for command-specific help.

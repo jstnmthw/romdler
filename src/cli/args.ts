@@ -1,5 +1,5 @@
 /** Command mode for the CLI */
-export type Command = 'download' | 'scrape' | 'purge' | 'dedupe' | 'help';
+export type Command = 'download' | 'scrape' | 'purge' | 'dedupe' | 'format' | 'help';
 
 /** Base CLI arguments shared by all commands */
 export interface BaseCliArgs {
@@ -32,6 +32,13 @@ export interface DedupeCliArgs extends BaseCliArgs {
   command: 'dedupe';
 }
 
+/** CLI arguments for format command */
+export interface FormatCliArgs extends BaseCliArgs {
+  command: 'format';
+  /** Overwrite existing formatted images */
+  force: boolean;
+}
+
 /** CLI arguments for help command */
 export interface HelpCliArgs {
   command: 'help';
@@ -51,6 +58,7 @@ export type CliArgs =
   | ScrapeCliArgs
   | PurgeCliArgs
   | DedupeCliArgs
+  | FormatCliArgs
   | HelpCliArgs
   | NoCommandArgs;
 
@@ -81,6 +89,7 @@ const VALID_COMMANDS: Record<string, Command> = {
   scrape: 'scrape',
   purge: 'purge',
   dedupe: 'dedupe',
+  format: 'format',
   help: 'help',
 };
 
@@ -179,6 +188,11 @@ export function parseArgs(args: string[]): CliArgs {
     regionPriority: undefined as string[] | undefined,
   };
 
+  // Format-specific arguments
+  const formatArgs = {
+    force: false,
+  };
+
   for (let i = startIndex; i < argsToProcess.length; i++) {
     const arg = argsToProcess[i];
     const next = argsToProcess[i + 1];
@@ -193,10 +207,13 @@ export function parseArgs(args: string[]): CliArgs {
       baseArgs.limit = parsePositiveInt(next);
       i++;
     }
-    // Scrape-specific arguments
+    // Scrape and format shared arguments
     else if (arg === '--force' || arg === '-f') {
       scrapeArgs.force = true;
-    } else if ((arg === '--media' || arg === '-m') && isValidArgValue(next)) {
+      formatArgs.force = true;
+    }
+    // Scrape-specific arguments
+    else if ((arg === '--media' || arg === '-m') && isValidArgValue(next)) {
       scrapeArgs.mediaType = next;
       i++;
     } else if ((arg === '--region' || arg === '-r') && isValidArgValue(next)) {
@@ -224,6 +241,14 @@ export function parseArgs(args: string[]): CliArgs {
     return {
       command: 'dedupe',
       ...baseArgs,
+    };
+  }
+
+  if (command === 'format') {
+    return {
+      command: 'format',
+      ...baseArgs,
+      ...formatArgs,
     };
   }
 

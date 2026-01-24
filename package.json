@@ -37,6 +37,7 @@
     "ink": "^6.6.0",
     "log-update": "^7.0.2",
     "react": "^19.2.3",
+    "sharp": "^0.34.5",
     "zod": "^4.3.5"
   },
   "devDependencies": {

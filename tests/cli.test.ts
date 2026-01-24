@@ -69,10 +69,16 @@ describe('CLI argument parser', () => {
         expect(result.command).toBe('dedupe');
       });
 
+      it('parses format command', () => {
+        const result = parseArgs(['format']);
+        expect(result.command).toBe('format');
+      });
+
       it('parses command case-insensitively', () => {
         expect(parseArgs(['SCRAPE']).command).toBe('scrape');
         expect(parseArgs(['Purge']).command).toBe('purge');
         expect(parseArgs(['DEDUPE']).command).toBe('dedupe');
+        expect(parseArgs(['FORMAT']).command).toBe('format');
       });
 
       it('skips leading -- delimiter', () => {
@@ -175,6 +181,42 @@ describe('CLI argument parser', () => {
           expect(result.mediaType).toBe('sstitle');
           expect(result.regionPriority).toEqual(['jp', 'us']);
           expect(result.dryRun).toBe(true);
+        }
+      });
+    });
+
+    describe('format command options', () => {
+      it('parses --force flag', () => {
+        const result = parseArgs(['format', '--force']);
+        expect(result.command).toBe('format');
+        if (result.command === 'format') {
+          expect(result.force).toBe(true);
+        }
+      });
+
+      it('parses -f short flag for force', () => {
+        const result = parseArgs(['format', '-f']);
+        expect(result.command).toBe('format');
+        if (result.command === 'format') {
+          expect(result.force).toBe(true);
+        }
+      });
+
+      it('parses all format options together', () => {
+        const result = parseArgs(['format', '-f', '-n', '-l', '5']);
+        expect(result.command).toBe('format');
+        if (result.command === 'format') {
+          expect(result.force).toBe(true);
+          expect(result.dryRun).toBe(true);
+          expect(result.limit).toBe(5);
+        }
+      });
+
+      it('defaults force to false', () => {
+        const result = parseArgs(['format']);
+        expect(result.command).toBe('format');
+        if (result.command === 'format') {
+          expect(result.force).toBe(false);
         }
       });
     });
@@ -400,6 +442,13 @@ describe('CLI argument parser', () => {
       const text = getHelpText('dedupe');
       expect(text).toContain('dedupe');
       expect(text).toContain('duplicate');
+    });
+
+    it('returns format help', () => {
+      const text = getHelpText('format');
+      expect(text).toContain('format');
+      expect(text).toContain('canvasWidth');
+      expect(text).toContain('gravity');
     });
   });
 

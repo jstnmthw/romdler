@@ -6,12 +6,23 @@
   "systems": [
     {
       "system": "gbc",
-      "url": "https://example.com/roms/gbc"
+      "url": "https://example.com/roms/gbc",
+      "enabled": true
     },
     {
       "system": "snes",
       "url": "https://example.com/roms/snes",
+      "enabled": true,
       "whitelist": ["USA", "World"]
     }
-  ]
+  ],
+  "format": {
+    "canvasWidth": 640,
+    "canvasHeight": 480,
+    "resizeMaxWidth": 320,
+    "resizeMaxHeight": 320,
+    "gravity": "west",
+    "padding": 20,
+    "outputFolder": "Formatted"
+  }
 }

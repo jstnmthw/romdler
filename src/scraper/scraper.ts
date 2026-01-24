@@ -146,6 +146,13 @@ export async function runScraper(config: Config, options: ScrapeOptions): Promis
   // Process each system
   for (const systemConfig of config.systems) {
     const system = resolveSystemConfig(systemConfig, config);
+
+    // Skip disabled systems
+    if (!system.enabled) {
+      console.log(chalk.yellow(`  Skipping disabled system: ${system.name}`));
+      continue;
+    }
+
     const results = await scrapeSystem(system, config, options, initializedSources);
     allResults.push(...results);
   }
